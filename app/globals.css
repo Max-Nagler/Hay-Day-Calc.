@@ -652,32 +652,58 @@ select:focus {
   margin-bottom: 16px;
 }
 
-/* Produkt- und Zutatenliste kompakter mit größeren Icons */
+/* Produktionsliste:
+   Gebäude untereinander,
+   Produkte eines Gebäudes immer nebeneinander in EINER Zeile */
 
 .visualProductionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   margin-top: 12px;
 }
 
 .visualGroup {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
   min-width: 0;
+  padding-bottom: 2px;
 }
 
 .visualGroup h3 {
-  margin-bottom: 6px;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  margin: 0;
+  padding-top: 8px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  background: rgba(255, 250, 240, 0.94);
 }
 
 .visualItemGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-  gap: 7px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+}
+
+.visualItemGrid::-webkit-scrollbar {
+  height: 7px;
+}
+
+.visualItemGrid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-warm);
 }
 
 .visualItemGrid.standalone {
@@ -687,18 +713,21 @@ select:focus {
 .visualItem {
   display: grid;
   justify-items: center;
-  min-height: 130px;
+  flex: 0 0 86px;
+  width: 86px;
+  min-height: 128px;
   padding: 7px 5px;
   border: 1px solid var(--border);
   border-radius: 13px;
   background: var(--surface-strong);
   text-align: center;
+  scroll-snap-align: start;
 }
 
 .visualIcon,
 .visualIcon.large {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   margin-bottom: 2px;
   object-fit: contain;
   border-radius: 10px;
@@ -750,8 +779,8 @@ select:focus {
 
 .iconFallback,
 .iconImage {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   flex: 0 0 auto;
   object-fit: contain;
   border-radius: 10px;
@@ -810,6 +839,10 @@ select:focus {
     overflow: visible;
     padding-right: 0;
   }
+
+  .visualGroup {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 620px) {
@@ -838,10 +871,6 @@ select:focus {
     text-align: left;
   }
 
-  .visualProductionGrid {
-    grid-template-columns: 1fr;
-  }
-
   .excludedQuickGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -850,7 +879,18 @@ select:focus {
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }
 
-  .visualItemGrid {
-    grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  .visualGroup {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .visualGroup h3 {
+    position: static;
+    padding-top: 0;
+  }
+
+  .visualItem {
+    flex-basis: 84px;
+    width: 84px;
   }
 }
