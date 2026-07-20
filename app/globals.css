@@ -21,6 +21,28 @@
   --red: #e56458;
   --red-soft: #fce9e7;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 22px rgba(77, 55, 27, 0.055);
+  --card-scale: 1;
+  --text-scale: 1;
+  --icon-scale: 1;
+  --panel-radius: 16px;
+  --panel-opacity: 0.94;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #191714;
+  --surface: #24211d;
+  --surface-strong: #2d2924;
+  --surface-soft: #322e28;
+  --text: #f5eee2;
+  --muted: #b5aa9b;
+  --border: #484139;
+  --border-warm: #5a4d3d;
+  --blue-soft: #18334d;
+  --green-soft: color-mix(in srgb, var(--green) 22%, #1f2a22);
+  --orange-soft: #4a3322;
+  --red-soft: #4a2423;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 10px 28px rgba(0, 0, 0, 0.22);
 }
 
 html {
@@ -32,9 +54,9 @@ body {
   min-height: 100vh;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(70, 161, 113, 0.13), transparent 30rem),
+    radial-gradient(circle at top left, color-mix(in srgb, var(--green) 18%, transparent), transparent 30rem),
     radial-gradient(circle at top right, rgba(39, 131, 222, 0.1), transparent 28rem),
-    linear-gradient(135deg, #f7f3e8 0%, #fffaf0 100%);
+    linear-gradient(135deg, var(--canvas) 0%, var(--surface) 100%);
   color: var(--text);
 }
 
@@ -188,8 +210,8 @@ h3 {
 
 .panel {
   border: 1px solid var(--border-warm);
-  border-radius: 16px;
-  background: rgba(255, 250, 240, 0.94);
+  border-radius: var(--panel-radius);
+  background: color-mix(in srgb, var(--surface) calc(var(--panel-opacity) * 100%), transparent);
   box-shadow: var(--shadow);
 }
 
@@ -479,9 +501,22 @@ select:focus {
 
 .profileBox {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin-top: 10px;
   margin-bottom: 12px;
+}
+
+.profileSection {
+  display: grid;
+  gap: 6px;
+}
+
+.profileSection strong {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .profileRow {
@@ -618,8 +653,8 @@ select:focus {
 }
 
 .buildingVisualIcon {
-  width: 62px;
-  height: 62px;
+  width: calc(62px * var(--icon-scale));
+  height: calc(62px * var(--icon-scale));
   margin-bottom: 3px;
   object-fit: contain;
   border-radius: 10px;
@@ -812,9 +847,9 @@ select:focus {
   position: relative;
   display: grid;
   justify-items: center;
-  flex: 0 0 86px;
-  width: 86px;
-  min-height: 128px;
+  flex: 0 0 calc(86px * var(--card-scale));
+  width: calc(86px * var(--card-scale));
+  min-height: calc(128px * var(--card-scale));
   padding: 7px 5px;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -824,8 +859,8 @@ select:focus {
 
 .visualIcon,
 .visualIcon.large {
-  width: 68px;
-  height: 68px;
+  width: calc(68px * var(--icon-scale));
+  height: calc(68px * var(--icon-scale));
   margin-bottom: 2px;
   object-fit: contain;
   border-radius: 10px;
@@ -1002,6 +1037,45 @@ select:focus {
   font-size: 12px;
   font-weight: 750;
   text-align: right;
+}
+
+.buildingVisualName {
+  font-size: calc(9px * var(--text-scale));
+}
+
+.buildingVisualMeta {
+  font-size: calc(8px * var(--text-scale));
+}
+
+.visualItem strong {
+  font-size: calc(12px * var(--text-scale));
+}
+
+.visualItem span {
+  font-size: calc(9px * var(--text-scale));
+}
+
+.visualItem small {
+  font-size: calc(8px * var(--text-scale));
+}
+
+:root[data-icons-only="true"] .visualItem {
+  min-height: auto;
+  padding: 8px;
+}
+
+:root[data-icons-only="true"] .buildingVisualButton {
+  min-height: calc(86px * var(--card-scale));
+  align-content: center;
+}
+
+:root[data-show-meta="false"] .buildingVisualMeta,
+:root[data-show-meta="false"] .visualItem small {
+  display: none;
+}
+
+.appearanceCompact .visualProductionGrid {
+  gap: 12px 10px;
 }
 
 @media (max-width: 960px) {
