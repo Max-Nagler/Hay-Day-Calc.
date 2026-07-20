@@ -654,29 +654,32 @@ select:focus {
 }
 
 /* Produktions- und Zutatenliste:
-   Masonry-Layout:
-   Gruppen füllen automatisch Lücken, statt perfekt untereinander zu stehen.
-   Innerhalb einer Gruppe steht:
+   echtes flexibles Wrapping.
+   Jede Gruppe ist ein Block:
    [Gebäudename]
    [Produkt] [Produkt] [...]
-*/
+   Der nächste Block rutscht direkt daneben, wenn Platz ist. */
 
 .visualProductionGrid {
-  column-width: 190px;
-  column-gap: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 18px 16px;
   margin-top: 12px;
 }
 
 .visualGroup {
-  display: inline-block;
-  width: 100%;
-  margin: 0 0 18px;
-  break-inside: avoid;
-  page-break-inside: avoid;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: 100%;
 }
 
 .visualGroup h3 {
-  margin: 0 0 6px;
+  margin: 0;
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
@@ -685,10 +688,23 @@ select:focus {
 }
 
 .visualItemGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, 86px);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
-  align-items: start;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 3px;
+}
+
+.visualItemGrid::-webkit-scrollbar {
+  height: 7px;
+}
+
+.visualItemGrid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-warm);
 }
 
 .visualItemGrid.standalone {
@@ -698,6 +714,7 @@ select:focus {
 .visualItem {
   display: grid;
   justify-items: center;
+  flex: 0 0 86px;
   width: 86px;
   min-height: 128px;
   padding: 7px 5px;
@@ -822,10 +839,6 @@ select:focus {
     overflow: visible;
     padding-right: 0;
   }
-
-  .visualProductionGrid {
-    column-width: 180px;
-  }
 }
 
 @media (max-width: 620px) {
@@ -863,11 +876,10 @@ select:focus {
   }
 
   .visualProductionGrid {
-    column-width: auto;
-    columns: 1;
+    gap: 14px 12px;
   }
 
-  .visualItemGrid {
-    grid-template-columns: repeat(auto-fit, 86px);
+  .visualGroup {
+    max-width: 100%;
   }
 }
