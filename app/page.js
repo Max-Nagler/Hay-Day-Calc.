@@ -254,24 +254,31 @@ export default function Home() {
       productsByBuilding.get(building).push(product.name);
     }
 
+    const buildingIconByName = new Map(
+      (normalized.buildings || []).map((building) => [building.name, building])
+    );
+
     return [
       {
         key: "ores",
         label: "Erze",
-        names: oreNames.filter((name) => excludedProductByName.has(name))
+        names: oreNames.filter((name) => excludedProductByName.has(name)),
+        iconItem: buildingIconByName.get("Mine") || excludedProductByName.get("Silbererz")
       },
       {
         key: "smelter",
         label: "Schmelzofen",
-        names: productsByBuilding.get("Schmelzofen") || []
+        names: productsByBuilding.get("Schmelzofen") || [],
+        iconItem: buildingIconByName.get("Schmelzofen")
       },
       ...specialExcludedNames.map((name) => ({
         key: name,
         label: name,
-        names: excludedProductByName.has(name) ? [name] : []
+        names: excludedProductByName.has(name) ? [name] : [],
+        iconItem: excludedProductByName.get(name)
       }))
     ].filter((group) => group.names.length);
-  }, [excludedProductByName, selectableExcludedProducts]);
+  }, [excludedProductByName, normalized.buildings, selectableExcludedProducts]);
 
   const baseSettingsComplete =
     Boolean(mode) &&
@@ -670,7 +677,7 @@ export default function Home() {
                 <div className="excludedSmartGrid">
                   {excludedGroups.map((group) => {
                     const active = group.names.every((name) => excludedIngredientNames.includes(name));
-                    const representativeProduct = excludedProductByName.get(group.names[0]);
+                    const representativeProduct = group.iconItem || excludedProductByName.get(group.names[0]);
 
                     return (
                       <button
