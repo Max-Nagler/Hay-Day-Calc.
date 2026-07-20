@@ -1,0 +1,312 @@
+.dashboardPanel {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.dashboardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.dashboardHeader h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.dashboardEyebrow {
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboardTabs,
+.dashboardSubTabs {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-strong);
+}
+
+.dashboardTabs button,
+.dashboardSubTabs button {
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.dashboardTabs button.active,
+.dashboardSubTabs button.active {
+  border-color: color-mix(in srgb, var(--green) 34%, transparent);
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--text);
+}
+
+.dashboardPage {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboardKpiGrid,
+.dashboardDeltaGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboardDeltaGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboardKpiCard,
+.dashboardDeltaCard,
+.slotRecommendationCard,
+.dashboardChartCard {
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--green) 10%, transparent), transparent 46%),
+    var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.dashboardKpiCard,
+.dashboardDeltaCard {
+  display: grid;
+  gap: 5px;
+  min-height: 92px;
+  padding: 12px;
+}
+
+.dashboardKpiCard span,
+.dashboardDeltaCard span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dashboardKpiCard strong,
+.dashboardDeltaCard strong {
+  color: var(--text);
+  font-size: clamp(22px, 4vw, 32px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dashboardKpiCard small,
+.dashboardDeltaCard small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.dashboardMiniBar,
+.utilizationBar {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.dashboardMiniBar span,
+.utilizationBar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--green), var(--accent-extra, var(--orange)));
+}
+
+.slotRecommendationCard {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+}
+
+.slotRecommendationCard strong {
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.slotRecommendationCard p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.slotRecommendationStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.slotRecommendationStats span {
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--green) 24%, transparent);
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.dashboardChartsGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+}
+
+.dashboardChartCard {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.dashboardChartCard h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dashboardChartBox {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.dashboardChartBox svg {
+  width: 100%;
+  min-height: 180px;
+  overflow: visible;
+}
+
+.dashboardChartLine {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dashboardChartGrid {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.dashboardChartBox circle {
+  fill: var(--surface-strong);
+  stroke: var(--green);
+  stroke-width: 3;
+}
+
+.dashboardChartLegend {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.utilizationList {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.utilizationRow {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(120px, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+}
+
+.utilizationRow > span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.utilizationRow strong {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.dashboardEmpty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+:root[data-theme="dark"] .dashboardKpiCard,
+:root[data-theme="dark"] .dashboardDeltaCard,
+:root[data-theme="dark"] .slotRecommendationCard,
+:root[data-theme="dark"] .dashboardChartCard,
+:root[data-theme="dark"] .dashboardTabs,
+:root[data-theme="dark"] .dashboardSubTabs {
+  background: var(--surface-strong);
+  border-color: var(--border);
+}
+
+@media (max-width: 900px) {
+  .dashboardHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboardTabs,
+  .dashboardSubTabs {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dashboardKpiGrid,
+  .dashboardDeltaGrid,
+  .dashboardChartsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .slotRecommendationCard {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .dashboardKpiGrid,
+  .dashboardDeltaGrid,
+  .dashboardChartsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .utilizationRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .utilizationRow strong {
+    text-align: left;
+  }
+}
