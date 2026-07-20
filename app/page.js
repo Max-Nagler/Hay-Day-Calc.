@@ -80,6 +80,70 @@ function mergeBuildingData(availableBuildings, normalizedBuildings) {
   });
 }
 
+function uniqueByName(items) {
+  const map = new Map();
+
+  for (const item of items || []) {
+    if (!item?.name) continue;
+    map.set(item.name, item);
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    return (a.level || 0) - (b.level || 0) || a.name.localeCompare(b.name);
+  });
+}
+
+function IngredientPreview({ entry }) {
+  const ingredients = Array.from(entry.ingredientsMap?.entries?.() || [])
+    .map(([key, amount]) => {
+      const product =
+        entry.product?.ingredientsByKey?.[key] ||
+        entry.ingredients?.find?.((item) => item.key === key) ||
+        null;
+
+      return {
+        key,
+        amount,
+        name: product?.name || key,
+        iconUrl: product?.iconUrl || "",
+        level: product?.level || 0
+      };
+    })
+    .filter((item) => item.name);
+
+  if (!ingredients.length) {
+    return (
+      <div className="ingredientHoverPanel">
+        <span className="ingredientHoverEmpty">Keine Zutaten</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ingredientHoverPanel">
+      <strong>Zutaten</strong>
+      <div className="ingredientHoverGrid">
+        {ingredients.map((item) => (
+          <div key={item.key} className="ingredientHoverItem">
+            <ProductIcon item={item} />
+            <span>{item.amount}×</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function createIngredientLookup(products) {
+  const map = {};
+
+  for (const product of products || []) {
+    map[product.key] = product;
+  }
+
+  return map;
+}
+
 export default function Home() {
   const [rawData, setRawData] = useState(fallbackRawData);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +193,29 @@ export default function Home() {
   }, []);
 
   const normalized = useMemo(() => normalizeData(rawData), [rawData]);
+
+  const ingredientLookup = useMemo(
+    () => createIngredientLookup(normalized.products),
+    [normalized.products]
+  );
+
+  const selectableExcludedProducts = useMemo(() => {
+    return uniqueByName(
+      normalized.products.filter((product) => {
+        const type = String(product.type || "").toLowerCase();
+
+        return (
+          type.includes("rohstoff") ||
+          type.includes("feld") ||
+          type.includes("tier") ||
+          type.includes("baum") ||
+          type.includes("busch") ||
+          type.includes("zwischenprodukt") ||
+          !product.building
+        );
+      })
+    );
+  }, [normalized.products]);
 
   const baseSettingsComplete =
     Boolean(mode) &&
@@ -216,7 +303,7 @@ export default function Home() {
   const result = useMemo(() => {
     if (!calculationStarted || !calculationSettings) return null;
 
-    return calculateProductionPlan({
+    const calculated = calculateProductionPlan({
       products: normalized.products,
       recipes: normalized.recipes,
       mode: calculationSettings.mode,
@@ -229,7 +316,27 @@ export default function Home() {
       intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced,
       excludedIngredientNames: calculationSettings.excludedIngredientNames
     });
-  }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
+
+    return {
+      ...calculated,
+      productionByBuilding: calculated.productionByBuilding.map((group) => ({
+        ...group,
+        items: group.items.map((entry) => ({
+          ...entry,
+          product: {
+            ...entry.product,
+            ingredientsByKey: ingredientLookup
+          }
+        }))
+      }))
+    };
+  }, [
+    normalized.products,
+    normalized.recipes,
+    calculationStarted,
+    calculationSettings,
+    ingredientLookup
+  ]);
 
   function getBuildingSlots(buildingName) {
     return slotsByBuilding[buildingName] ?? defaultSlotsByBuilding[buildingName] ?? globalSlots;
@@ -348,7 +455,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="settingsGrid compactSettingsGrid">
+      <section className="settingsGrid compactSettingsGrid equalSettingsGrid">
         <div className="settingsColumn">
           <details open className="panel compactPanel">
             <summary>Grunddaten</summary>
@@ -435,26 +542,31 @@ export default function Home() {
 
                 <div className="excludedBox">
                   <div className="excludedHeader">
-                    <strong>Zutaten ausschließen</strong>
+                    <strong>Produkte ausschließen</strong>
                     <small>{excludedIngredientNames.length} aktiv</small>
                   </div>
 
-                  <div className="excludedQuickGrid">
-                    {defaultExcludedIngredients.map((ingredient) => (
-                      <button
-                        key={ingredient}
-                        type="button"
-                        className={
-                          excludedIngredientNames.includes(ingredient)
-                            ? "excludedChip active"
-                            : "excludedChip"
-                        }
-                        onClick={() => toggleExcludedIngredient(ingredient)}
-                      >
-                        {ingredient}
-                      </button>
-                    ))}
-                  </div>
+                  <details className="multiSelectDropdown">
+                    <summary>
+                      {excludedIngredientNames.length
+                        ? `${excludedIngredientNames.length} ausgewählt`
+                        : "Produkte auswählen"}
+                    </summary>
+
+                    <div className="multiSelectMenu">
+                      {selectableExcludedProducts.map((product) => (
+                        <label key={product.key} className="multiSelectOption">
+                          <input
+                            type="checkbox"
+                            checked={excludedIngredientNames.includes(product.name)}
+                            onChange={() => toggleExcludedIngredient(product.name)}
+                          />
+                          <ProductIcon item={product} />
+                          <span>{product.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
 
                   <div className="excludedInputRow">
                     <input
@@ -509,8 +621,8 @@ export default function Home() {
           </details>
         </div>
 
-        <div className="buildingsColumn">
-          <details className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}>
+        <div className="buildingsColumn equalBuildingsColumn">
+          <details className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel" : "panel compactPanel disabled equalBuildingsPanel"}>
             <summary>Produktionsgebäude</summary>
 
             {!baseSettingsComplete ? (
@@ -527,7 +639,7 @@ export default function Home() {
                   <span>{allowedBuildings.length}/{availableBuildings.length} aktiv</span>
                 </div>
 
-                <div className="buildingVisualGrid withSlotControls">
+                <div className="buildingVisualGrid withSlotControls equalBuildingsGrid">
                   {availableBuildings.map((building) => {
                     const isAllowed = allowedBuildings.includes(building.name);
                     const buildingSlots = getBuildingSlots(building.name);
@@ -630,7 +742,10 @@ export default function Home() {
                                 : "visualItem"
                             }
                           >
-                            <ProductIcon item={entry.product} size="large" />
+                            <div className="visualItemHoverWrap">
+                              <ProductIcon item={entry.product} size="large" />
+                              <IngredientPreview entry={entry} />
+                            </div>
                             <strong>{entry.amount}×</strong>
                             <span>{entry.product.name}</span>
                             <small>
