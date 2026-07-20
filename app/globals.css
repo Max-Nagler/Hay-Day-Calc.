@@ -158,8 +158,6 @@ h3 {
   box-shadow: 0 0 0 4px var(--orange-soft);
 }
 
-/* Layout */
-
 .settingsGrid,
 .compactSettingsGrid {
   display: grid;
@@ -174,8 +172,6 @@ h3 {
   gap: 12px;
   min-width: 0;
 }
-
-/* Panels / Toggles */
 
 .panel {
   border: 1px solid var(--border-warm);
@@ -241,8 +237,6 @@ details.panel > *:last-child {
   margin-bottom: 16px;
 }
 
-/* Rechenmodus */
-
 .modeSegment {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -274,8 +268,6 @@ details.panel > *:last-child {
 .segmentButton:hover {
   background: var(--surface-soft);
 }
-
-/* Felder / Slider */
 
 .field {
   display: grid;
@@ -321,8 +313,6 @@ select:focus {
   outline-offset: 2px;
 }
 
-/* Checkbox */
-
 .checkbox {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -347,8 +337,6 @@ select:focus {
   margin-top: 12px;
   margin-bottom: 12px;
 }
-
-/* Zutaten ausschließen */
 
 .excludedBox {
   display: grid;
@@ -443,8 +431,6 @@ select:focus {
   font-weight: 750;
 }
 
-/* Button */
-
 .calculateButton {
   width: 100%;
   min-height: 42px;
@@ -461,8 +447,6 @@ select:focus {
   filter: brightness(0.98);
   transform: translateY(-1px);
 }
-
-/* Gebäude */
 
 .buildingActions {
   display: grid;
@@ -507,12 +491,18 @@ select:focus {
   background: var(--border-warm);
 }
 
+.buildingChipWrap {
+  position: relative;
+  min-width: 0;
+}
+
 .buildingChip {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   align-items: center;
-  min-height: 38px;
+  width: 100%;
+  min-height: 48px;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 11px;
@@ -532,7 +522,15 @@ select:focus {
 .buildingChip small {
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: right;
+}
+
+.buildingChip small em {
+  color: #9b9791;
+  font-style: normal;
+  font-weight: 650;
 }
 
 .buildingChip.active {
@@ -540,7 +538,50 @@ select:focus {
   background: var(--green-soft);
 }
 
-/* Hilfstexte */
+.buildingSlotHover {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  left: 0;
+  top: calc(100% + 4px);
+  display: none;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border-warm);
+  border-radius: 12px;
+  background: rgba(255, 250, 240, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.buildingChipWrap:hover .buildingSlotHover,
+.buildingChipWrap:focus-within .buildingSlotHover {
+  display: grid;
+}
+
+.buildingSlotHover label {
+  display: grid;
+  gap: 4px;
+}
+
+.buildingSlotHover label span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.buildingSlotHover input[type="range"] {
+  height: 18px;
+}
+
+.buildingSlotHover button {
+  min-height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
 
 .helperText {
   color: var(--muted);
@@ -560,8 +601,6 @@ select:focus {
   font-size: 13px;
   line-height: 1.4;
 }
-
-/* Summary */
 
 .belowSettings {
   margin-top: 12px;
@@ -595,8 +634,6 @@ select:focus {
   line-height: 1;
   letter-spacing: -0.03em;
 }
-
-/* Ausgabe */
 
 .output.belowSettings {
   display: grid;
@@ -681,8 +718,6 @@ select:focus {
   border-color: rgba(39, 131, 222, 0.24) !important;
 }
 
-/* Icons */
-
 .iconFallback,
 .iconImage {
   width: 30px;
@@ -706,8 +741,6 @@ select:focus {
   background: var(--surface-soft);
 }
 
-/* Warnungen */
-
 .warnings {
   padding: 12px 14px;
   border: 1px solid rgba(213, 128, 59, 0.25);
@@ -724,8 +757,6 @@ select:focus {
 .warnings p + p {
   margin-top: 5px;
 }
-
-/* Mobile */
 
 @media (max-width: 960px) {
   .shell {
