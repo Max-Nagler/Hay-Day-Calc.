@@ -17,18 +17,35 @@ const modes = [
   { id: "slots", label: "Slots" }
 ];
 
+const colorPalettes = [
+  { id: "hay", colors: ["#f7f3e8", "#fffaf0", "#46a171", "#2783de", "#d5803b"] },
+  { id: "mono", colors: ["#f4f4f4", "#ffffff", "#8a8a8a", "#3f3f3f", "#111111"] },
+  { id: "berry", colors: ["#f8d8f1", "#fff0fb", "#bf55bf", "#7b1f73", "#4b124a"] },
+  { id: "ocean", colors: ["#d9f4ff", "#eefaff", "#18a0ce", "#0d5b78", "#0a3445"] },
+  { id: "forest", colors: ["#d8f3d0", "#f1ffed", "#46a171", "#2d7a20", "#163f14"] },
+  { id: "sunset", colors: ["#fff0e3", "#fff8f1", "#ed6d2f", "#c64e12", "#7f2e0b"] }
+];
+
+const paletteById = new Map(colorPalettes.map((palette) => [palette.id, palette]));
+
 const defaultAppearance = {
   theme: "system",
   compactMode: true,
   cardScale: 100,
   textScale: 100,
   iconScale: 100,
-  cornerRadius: 16,
-  accent: "#46a171",
-  panelOpacity: 94,
+  palette: "hay",
   showMeta: true,
   iconsOnly: false
 };
+
+function normalizeAppearance(value) {
+  return {
+    ...defaultAppearance,
+    ...value,
+    palette: paletteById.has(value.palette) ? value.palette : "hay"
+  };
+}
 
 function getEffectiveTheme(theme) {
   if (theme !== "system") return theme;
@@ -37,15 +54,28 @@ function getEffectiveTheme(theme) {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function colorMix(color, baseColor, weight = 0.2) {
+  const hex = color.replace("#", "");
+  const baseHex = baseColor.replace("#", "");
+  const value = hex.length === 3 ? hex.split("").map((part) => part + part).join("") : hex;
+  const baseValue =
+    baseHex.length === 3 ? baseHex.split("").map((part) => part + part).join("") : baseHex;
+
+  const colorRgb = [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16));
+  const baseRgb = [0, 2, 4].map((index) => parseInt(baseValue.slice(index, index + 2), 16));
+
+  const mixed = colorRgb.map((channel, index) =>
+    Math.round(channel * weight + baseRgb[index] * (1 - weight))
+  );
+
+  return `#${mixed.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
 function readStoredAppearance() {
   if (typeof window === "undefined") return defaultAppearance;
 
   try {
-    const stored = JSON.parse(localStorage.getItem("hayDayCalcAppearance") || "{}");
-    return {
-      ...defaultAppearance,
-      ...stored
-    };
+    return normalizeAppearance(JSON.parse(localStorage.getItem("hayDayCalcAppearance") || "{}"));
   } catch {
     return defaultAppearance;
   }
@@ -59,12 +89,36 @@ function applyAppearance(appearance) {
   document.documentElement.dataset.theme = effectiveTheme;
   document.documentElement.dataset.iconsOnly = appearance.iconsOnly ? "true" : "false";
   document.documentElement.dataset.showMeta = appearance.showMeta ? "true" : "false";
-  document.documentElement.style.setProperty("--green", appearance.accent);
+  const palette = paletteById.get(appearance.palette) || colorPalettes[0];
+
+  const isDark = effectiveTheme === "dark";
+  const canvas = isDark ? colorMix(palette.colors[4], "#090907", 0.42) : palette.colors[0];
+  const surface = isDark ? colorMix(palette.colors[4], "#191714", 0.28) : palette.colors[1];
+  const surfaceStrong = isDark ? colorMix(palette.colors[3], "#201d19", 0.2) : "#ffffff";
+  const surfaceSoft = isDark ? colorMix(palette.colors[3], "#2b2721", 0.18) : "#f9f8f7";
+  const border = isDark ? colorMix(palette.colors[2], "#5a4d3d", 0.22) : "#e6e5e3";
+  const borderWarm = isDark ? colorMix(palette.colors[4], "#5a4d3d", 0.28) : "#eadcc3";
+  const text = isDark ? "#f6efe4" : "#2c2c2b";
+  const muted = isDark ? "#b8ad9f" : "#7d7a75";
+
+  document.documentElement.dataset.palette = palette.id;
+  document.documentElement.style.setProperty("--canvas", canvas);
+  document.documentElement.style.setProperty("--surface", surface);
+  document.documentElement.style.setProperty("--surface-strong", surfaceStrong);
+  document.documentElement.style.setProperty("--surface-soft", surfaceSoft);
+  document.documentElement.style.setProperty("--border", border);
+  document.documentElement.style.setProperty("--border-warm", borderWarm);
+  document.documentElement.style.setProperty("--text", text);
+  document.documentElement.style.setProperty("--muted", muted);
+  document.documentElement.style.setProperty("--green", palette.colors[2]);
+  document.documentElement.style.setProperty("--blue", palette.colors[3]);
+  document.documentElement.style.setProperty("--orange", palette.colors[4]);
+  document.documentElement.style.setProperty("--green-soft", colorMix(palette.colors[2], surfaceStrong, isDark ? 0.24 : 0.14));
+  document.documentElement.style.setProperty("--blue-soft", colorMix(palette.colors[3], surfaceStrong, isDark ? 0.24 : 0.14));
+  document.documentElement.style.setProperty("--orange-soft", colorMix(palette.colors[4], surfaceStrong, isDark ? 0.24 : 0.14));
   document.documentElement.style.setProperty("--card-scale", String(appearance.cardScale / 100));
   document.documentElement.style.setProperty("--text-scale", String(appearance.textScale / 100));
   document.documentElement.style.setProperty("--icon-scale", String(appearance.iconScale / 100));
-  document.documentElement.style.setProperty("--panel-radius", `${appearance.cornerRadius}px`);
-  document.documentElement.style.setProperty("--panel-opacity", String(appearance.panelOpacity / 100));
 }
 
 const oreNames = ["Silbererz", "Golderz", "Platinerz", "Kohle", "Eisenerz"];
