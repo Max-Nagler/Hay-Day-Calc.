@@ -541,8 +541,7 @@ select:focus {
   line-height: 1.1;
 }
 
-/* Slot-Regler nur bei Hover sichtbar.
-   focus-within wurde bewusst entfernt, damit der Regler nach Klick nicht hängen bleibt. */
+/* Slot-Regler nur bei Hover sichtbar */
 
 .buildingSlotHover {
   position: absolute;
@@ -655,30 +654,29 @@ select:focus {
 }
 
 /* Produktions- und Zutatenliste:
-   Gebäudeblock:
+   Masonry-Layout:
+   Gruppen füllen automatisch Lücken, statt perfekt untereinander zu stehen.
+   Innerhalb einer Gruppe steht:
    [Gebäudename]
    [Produkt] [Produkt] [...]
-   Die Blöcke selbst laufen in einem Grid und füllen die Zeile. */
+*/
 
 .visualProductionGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, max-content));
-  gap: 18px 16px;
-  align-items: start;
+  column-width: 190px;
+  column-gap: 16px;
   margin-top: 12px;
 }
 
 .visualGroup {
-  display: grid;
-  gap: 6px;
-  align-content: start;
-  width: max-content;
-  max-width: 100%;
-  min-width: 0;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 18px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .visualGroup h3 {
-  margin: 0;
+  margin: 0 0 6px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
@@ -688,24 +686,9 @@ select:focus {
 
 .visualItemGrid {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 86px;
-  grid-template-rows: 1fr;
+  grid-template-columns: repeat(auto-fit, 86px);
   gap: 8px;
-  width: max-content;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 3px;
-}
-
-.visualItemGrid::-webkit-scrollbar {
-  height: 7px;
-}
-
-.visualItemGrid::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: var(--border-warm);
+  align-items: start;
 }
 
 .visualItemGrid.standalone {
@@ -841,7 +824,7 @@ select:focus {
   }
 
   .visualProductionGrid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
+    column-width: 180px;
   }
 }
 
@@ -880,14 +863,11 @@ select:focus {
   }
 
   .visualProductionGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .visualGroup {
-    width: 100%;
+    column-width: auto;
+    columns: 1;
   }
 
   .visualItemGrid {
-    max-width: 100%;
+    grid-template-columns: repeat(auto-fit, 86px);
   }
 }
