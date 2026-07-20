@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateProductionPlan, getAvailableBuildings } from "../lib/calculator";
 import { normalizeData } from "../lib/normalize";
-import { useCalculatorState } from "../lib/useCalculatorState";
 
 const fallbackRawData = {
   ok: true,
@@ -161,74 +160,24 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const { state: calculatorState, updateState } = useCalculatorState();
+  const [mode, setMode] = useState("");
+  const [level, setLevel] = useState(50);
+  const [hours, setHours] = useState(8);
+  const [globalSlots, setGlobalSlots] = useState(4);
 
-  const {
-    mode,
-    level,
-    hours,
-    globalSlots,
-    slotsByBuilding,
-    intermediateMustBeProduced,
-    excludedIngredientNames,
-    allowedBuildings,
-    userChangedBuildings,
-    calculationRequestedAt
-  } = calculatorState;
+  const [slotsByBuilding, setSlotsByBuilding] = useState({});
+  const [intermediateMustBeProduced, setIntermediateMustBeProduced] = useState(false);
 
+  const [excludedIngredientNames, setExcludedIngredientNames] = useState([]);
   const [customExcludedIngredient, setCustomExcludedIngredient] = useState("");
+
+  const [allowedBuildings, setAllowedBuildings] = useState([]);
+  const [userChangedBuildings, setUserChangedBuildings] = useState(false);
+
+  const [calculationStarted, setCalculationStarted] = useState(false);
   const [calculationSettings, setCalculationSettings] = useState(null);
+
   const [hoverIngredients, setHoverIngredients] = useState(null);
-
-  const calculationStarted = Boolean(calculationSettings);
-
-  function setMode(nextMode) {
-    updateState({ mode: nextMode });
-  }
-
-  function setLevel(nextLevel) {
-    updateState({ level: nextLevel });
-  }
-
-  function setHours(nextHours) {
-    updateState({ hours: nextHours });
-  }
-
-  function setGlobalSlots(nextGlobalSlots) {
-    updateState({ globalSlots: nextGlobalSlots });
-  }
-
-  function setSlotsByBuilding(updater) {
-    updateState((current) => ({
-      ...current,
-      slotsByBuilding:
-        typeof updater === "function" ? updater(current.slotsByBuilding) : updater
-    }));
-  }
-
-  function setIntermediateMustBeProduced(nextValue) {
-    updateState({ intermediateMustBeProduced: nextValue });
-  }
-
-  function setExcludedIngredientNames(updater) {
-    updateState((current) => ({
-      ...current,
-      excludedIngredientNames:
-        typeof updater === "function" ? updater(current.excludedIngredientNames) : updater
-    }));
-  }
-
-  function setAllowedBuildings(updater) {
-    updateState((current) => ({
-      ...current,
-      allowedBuildings:
-        typeof updater === "function" ? updater(current.allowedBuildings) : updater
-    }));
-  }
-
-  function setUserChangedBuildings(nextValue) {
-    updateState({ userChangedBuildings: nextValue });
-  }
 
   useEffect(() => {
     async function loadData() {
@@ -347,6 +296,7 @@ export default function Home() {
   }, [availableBuildingNames, baseSettingsComplete, userChangedBuildings]);
 
   useEffect(() => {
+    setCalculationStarted(false);
     setCalculationSettings(null);
   }, [
     mode,
@@ -473,7 +423,7 @@ export default function Home() {
       excludedIngredientNames
     });
 
-    updateState({ calculationRequestedAt: Date.now() });
+    setCalculationStarted(true);
   }
 
   function showIngredientOverlay(event, entry) {
