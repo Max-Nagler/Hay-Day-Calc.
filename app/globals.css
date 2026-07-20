@@ -166,11 +166,24 @@ h3 {
   align-items: start;
 }
 
+.equalSettingsGrid {
+  align-items: stretch;
+}
+
 .settingsColumn,
 .buildingsColumn {
   display: grid;
   gap: 12px;
   min-width: 0;
+}
+
+.equalSettingsGrid > .settingsColumn,
+.equalSettingsGrid > .equalBuildingsColumn {
+  height: 100%;
+}
+
+.equalBuildingsColumn {
+  display: grid;
 }
 
 .panel {
@@ -187,6 +200,23 @@ h3 {
 .panel.disabled {
   opacity: 0.55;
   filter: grayscale(0.12);
+}
+
+.equalBuildingsPanel {
+  height: 100%;
+}
+
+.equalBuildingsPanel[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.equalBuildingsPanel[open] > summary {
+  flex: 0 0 auto;
+}
+
+.equalBuildingsPanel[open] > .buildingActions {
+  flex: 0 0 auto;
 }
 
 details.panel {
@@ -425,6 +455,94 @@ select:focus {
   font-weight: 750;
 }
 
+.multiSelectDropdown {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.multiSelectDropdown > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  list-style: none;
+  cursor: pointer;
+}
+
+.multiSelectDropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.multiSelectDropdown > summary::after {
+  content: "⌄";
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.multiSelectDropdown[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.multiSelectMenu {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  left: 0;
+  top: calc(100% + 5px);
+  display: grid;
+  gap: 4px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 7px;
+  border: 1px solid var(--border-warm);
+  border-radius: 12px;
+  background: rgba(255, 250, 240, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.multiSelectOption {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 7px;
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.multiSelectOption:hover {
+  background: var(--surface-soft);
+}
+
+.multiSelectOption input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--green);
+}
+
+.multiSelectOption .visualIcon {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.multiSelectOption span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .calculateButton {
   width: 100%;
   min-height: 42px;
@@ -478,8 +596,6 @@ select:focus {
   text-align: right;
 }
 
-/* Gebäude-Auswahl */
-
 .buildingVisualGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
@@ -487,6 +603,14 @@ select:focus {
   max-height: 430px;
   overflow: auto;
   padding-right: 3px;
+}
+
+.equalBuildingsGrid {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+  overflow: auto;
+  align-content: start;
 }
 
 .buildingVisualGrid::-webkit-scrollbar {
@@ -555,8 +679,6 @@ select:focus {
   font-size: 9px;
   line-height: 1.1;
 }
-
-/* Slot-Regler nur bei Hover sichtbar */
 
 .buildingSlotHover {
   position: absolute;
@@ -668,13 +790,6 @@ select:focus {
   margin-bottom: 16px;
 }
 
-/* Produktions- und Zutatenliste:
-   flexibles Wrapping.
-   Jede Gruppe ist ein Block:
-   [Gebäudename]
-   [Produkt] [Produkt] [...]
-*/
-
 .visualProductionGrid {
   display: flex;
   flex-wrap: wrap;
@@ -727,6 +842,7 @@ select:focus {
 }
 
 .visualItem {
+  position: relative;
   display: grid;
   justify-items: center;
   flex: 0 0 86px;
@@ -737,6 +853,12 @@ select:focus {
   border-radius: 13px;
   background: var(--surface-strong);
   text-align: center;
+}
+
+.visualItemHoverWrap {
+  position: relative;
+  display: grid;
+  justify-items: center;
 }
 
 .visualIcon,
@@ -781,6 +903,79 @@ select:focus {
   color: var(--muted);
   font-size: 8px;
   line-height: 1.1;
+}
+
+.ingredientHoverPanel {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  display: none;
+  min-width: 118px;
+  max-width: 180px;
+  padding: 8px;
+  border: 1px solid var(--border-warm);
+  border-radius: 12px;
+  background: rgba(255, 250, 240, 0.98);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.visualItem:hover .ingredientHoverPanel {
+  display: grid;
+  gap: 6px;
+}
+
+.ingredientHoverPanel::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid var(--border-warm);
+  border-bottom: 1px solid var(--border-warm);
+  background: rgba(255, 250, 240, 0.98);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.ingredientHoverPanel > strong {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ingredientHoverGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ingredientHoverItem {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  width: 34px;
+}
+
+.ingredientHoverItem .visualIcon {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  border-radius: 7px;
+}
+
+.ingredientHoverItem span {
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.ingredientHoverEmpty {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .intermediateItem {
@@ -831,8 +1026,6 @@ select:focus {
 .warnings p + p {
   margin-top: 5px;
 }
-
-/* Embed-Seiten */
 
 .embedShell {
   width: 100%;
@@ -887,6 +1080,14 @@ select:focus {
     overflow: visible;
     padding-right: 0;
   }
+
+  .equalBuildingsPanel {
+    height: auto;
+  }
+
+  .equalBuildingsPanel[open] {
+    display: block;
+  }
 }
 
 @media (max-width: 620px) {
@@ -937,5 +1138,9 @@ select:focus {
 
   .visualGroup {
     max-width: 100%;
+  }
+
+  .multiSelectMenu {
+    max-height: 210px;
   }
 }
