@@ -653,6 +653,59 @@ export default function Home() {
       <section className="settingsGrid compactSettingsGrid equalSettingsGrid">
         <div className="settingsColumn" ref={settingsColumnRef}>
           <details open className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
+            <summary>Profile</summary>
+
+            <div className="profileBox">
+              <div className="profileSection">
+                <strong>Neues Profil speichern</strong>
+                <div className="profileRow">
+                  <input
+                    type="text"
+                    placeholder="Profilname"
+                    value={profileName}
+                    onChange={(event) => setProfileName(event.target.value)}
+                  />
+
+                  <button type="button" onClick={saveProfile}>
+                    Speichern
+                  </button>
+                </div>
+              </div>
+
+              <div className="profileSection">
+                <strong>Vorhandenes Profil laden</strong>
+                <div className="profileRow">
+                  <select
+                    value={selectedProfileId}
+                    onChange={(event) => {
+                      const profile = profiles.find((item) => item.id === event.target.value);
+                      setSelectedProfileId(event.target.value);
+                      setProfileName(profile?.name || "");
+                    }}
+                  >
+                    <option value="">Profil wählen</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button type="button" onClick={() => loadProfile(selectedProfileId)} disabled={!selectedProfileId}>
+                    Laden
+                  </button>
+                </div>
+              </div>
+
+              {selectedProfileId && (
+                <button type="button" className="profileDeleteButton" onClick={deleteProfile}>
+                  Profil löschen
+                </button>
+              )}
+            </div>
+          </details>
+
+          <details open className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
             <summary>Grunddaten</summary>
 
             <div className="modeSegment">
@@ -809,52 +862,7 @@ export default function Home() {
             )}
           </details>
 
-          <details className="panel compactPanel">
-            <summary>Profile</summary>
 
-            <div className="profileBox">
-              <div className="profileRow">
-                <select
-                  value={selectedProfileId}
-                  onChange={(event) => {
-                    const profile = profiles.find((item) => item.id === event.target.value);
-                    setSelectedProfileId(event.target.value);
-                    setProfileName(profile?.name || "");
-                  }}
-                >
-                  <option value="">Neues Profil</option>
-                  {profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name}
-                    </option>
-                  ))}
-                </select>
-
-                <button type="button" onClick={() => loadProfile(selectedProfileId)} disabled={!selectedProfileId}>
-                  Laden
-                </button>
-              </div>
-
-              <div className="profileRow">
-                <input
-                  type="text"
-                  placeholder="Profilname"
-                  value={profileName}
-                  onChange={(event) => setProfileName(event.target.value)}
-                />
-
-                <button type="button" onClick={saveProfile}>
-                  Speichern
-                </button>
-              </div>
-
-              {selectedProfileId && (
-                <button type="button" className="profileDeleteButton" onClick={deleteProfile}>
-                  Profil löschen
-                </button>
-              )}
-            </div>
-          </details>
 
           <button
             type="button"
