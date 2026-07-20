@@ -206,7 +206,7 @@ function formatMinutes(minutes) {
   if (!minutes) return "0 min";
 
   const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+  const m = Math.round(minutes % 60);
 
   if (h && m) return `${h} h ${m} min`;
   if (h) return `${h} h`;
@@ -235,14 +235,17 @@ export default function Home() {
   const [rawData, setRawData] = useState(fallbackRawData);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
   const [mode, setMode] = useState("coins");
   const [level, setLevel] = useState(33);
   const [hours, setHours] = useState(8);
+  const [globalSlots, setGlobalSlots] = useState(5);
+
   const [resolveToBaseIngredients, setResolveToBaseIngredients] = useState(true);
   const [assumeIntermediateStock, setAssumeIntermediateStock] = useState(false);
-  const [globalSlots, setGlobalSlots] = useState(5);
+
   const [allowedBuildings, setAllowedBuildings] = useState([]);
-  const [slotsByBuilding, setSlotsByBuilding] = useState({});
+  const [userChangedBuildings, setUserChangedBuildings] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -277,29 +280,22 @@ export default function Home() {
     [normalized.products, level]
   );
 
+  const availableBuildingNames = useMemo(
+    () => availableBuildings.map((building) => building.name),
+    [availableBuildings]
+  );
+
   useEffect(() => {
     setAllowedBuildings((current) => {
-      if (current.length > 0) {
-        return current.filter((building) =>
-          availableBuildings.some((item) => item.name === building)
-        );
+      const stillAvailable = current.filter((name) => availableBuildingNames.includes(name));
+
+      if (!userChangedBuildings) {
+        return availableBuildingNames;
       }
 
-      return availableBuildings.map((building) => building.name);
+      return stillAvailable;
     });
-
-    setSlotsByBuilding((current) => {
-      const next = { ...current };
-
-      for (const building of availableBuildings) {
-        if (!next[building.name]) {
-          next[building.name] = 1;
-        }
-      }
-
-      return next;
-    });
-  }, [availableBuildings]);
+  }, [availableBuildingNames, userChangedBuildings]);
 
   const canShowAdvanced = level > 0 && hours > 0;
 
@@ -312,7 +308,6 @@ export default function Home() {
       hours,
       globalSlots,
       allowedBuildings,
-      slotsByBuilding,
       assumeIntermediateStock,
       resolveToBaseIngredients
     });
@@ -324,16 +319,18 @@ export default function Home() {
     hours,
     globalSlots,
     allowedBuildings,
-    slotsByBuilding,
     assumeIntermediateStock,
     resolveToBaseIngredients
   ]);
 
   function changeLevel(delta) {
     setLevel((current) => Math.max(1, current + delta));
+    setUserChangedBuildings(false);
   }
 
   function toggleBuilding(buildingName) {
+    setUserChangedBuildings(true);
+
     setAllowedBuildings((current) => {
       if (current.includes(buildingName)) {
         return current.filter((name) => name !== buildingName);
@@ -341,6 +338,16 @@ export default function Home() {
 
       return [...current, buildingName];
     });
+  }
+
+  function selectAllBuildings() {
+    setUserChangedBuildings(false);
+    setAllowedBuildings(availableBuildingNames);
+  }
+
+  function clearAllBuildings() {
+    setUserChangedBuildings(true);
+    setAllowedBuildings([]);
   }
 
   return (
@@ -351,14 +358,16 @@ export default function Home() {
           <h1>Produktionsplan für deine Farm.</h1>
           <p className="subtitle">
             Wähle Modus, Level, Zeitfenster und Gebäude. Der Rechner erstellt
-            eine Produktionsliste und summiert die benötigten Zutaten.
+            für jedes ausgewählte Gebäude eine eigene Warteschlange.
           </p>
         </div>
 
         <div className="syncBox">
           <span className={loadError ? "dot warning" : "dot"} />
           <div>
-            <strong>{isLoading ? "Lade Daten…" : loadError ? "Demo-Modus" : "Live-Daten"}</strong>
+            <strong>
+              {isLoading ? "Lade Daten…" : loadError ? "Demo-Modus" : "Live-Daten"}
+            </strong>
             <small>
               {loadError ||
                 `Datenstand: ${
@@ -397,7 +406,10 @@ export default function Home() {
                   type="number"
                   min="1"
                   value={level}
-                  onChange={(event) => setLevel(Math.max(1, Number(event.target.value)))}
+                  onChange={(event) => {
+                    setLevel(Math.max(1, Number(event.target.value)));
+                    setUserChangedBuildings(false);
+                  }}
                 />
                 <div className="stepper">
                   <StepperButton onClick={() => changeLevel(-10)}>-10</StepperButton>
@@ -424,18 +436,66 @@ export default function Home() {
 
             <label className="field">
               <span>Freie Slots pro Warteschlange: {globalSlots}</span>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  step="1"
-                  value={globalSlots}
-                  onChange={(event) => setGlobalSlots(Number(event.target.value))}
-                />
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={globalSlots}
+                onChange={(event) => setGlobalSlots(Number(event.target.value))}
+              />
             </label>
           </details>
 
           <details open={canShowAdvanced} className={canShowAdvanced ? "panel" : "panel disabled"}>
+            <summary>Produktionsgebäude</summary>
+
+            <div className="buildingActions">
+              <button type="button" onClick={selectAllBuildings}>
+                Alle auswählen
+              </button>
+              <button type="button" onClick={clearAllBuildings}>
+                Keine
+              </button>
+            </div>
+
+            <p className="helperText">
+              Standardmäßig sind alle Gebäude ausgewählt, die bei Level {level} verfügbar sind.
+            </p>
+
+            <div className="buildingList">
+              {availableBuildings.map((building) => {
+                const isAllowed = allowedBuildings.includes(building.name);
+
+                return (
+                  <div
+                    key={building.name}
+                    className={isAllowed ? "buildingCard active" : "buildingCard"}
+                  >
+                    <button type="button" onClick={() => toggleBuilding(building.name)}>
+                      <span className="iconFallback small">
+                        {building.name.slice(0, 1)}
+                      </span>
+                      <span>
+                        <strong>{building.name}</strong>
+                        <small>
+                          ab Level {building.level} · {isAllowed ? "aktiv" : "ausgeschlossen"}
+                        </small>
+                      </span>
+                    </button>
+
+                    {isAllowed && (
+                      <p className="buildingHint">
+                        nutzt globale Sloteinstellung: {globalSlots}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+
+          <details open className="panel">
             <summary>Zusätzliche Einstellungen</summary>
 
             <label className="checkbox">
@@ -446,54 +506,15 @@ export default function Home() {
               />
               Bis auf Grundzutaten zurückrechnen
             </label>
-            
+
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={assumeIntermediateStock}
                 onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
-                />
-                Zwischenprodukte sind bereits auf Lager
+              />
+              Zwischenprodukte sind bereits auf Lager
             </label>
-
-            <div className="buildingList">
-              {availableBuildings.map((building) => {
-                const isAllowed = allowedBuildings.includes(building.name);
-
-                return (
-                  <div key={building.name} className={isAllowed ? "buildingCard active" : "buildingCard"}>
-                    <button type="button" onClick={() => toggleBuilding(building.name)}>
-                      <span className="iconFallback small">
-                        {building.name.slice(0, 1)}
-                      </span>
-                      <span>
-                        <strong>{building.name}</strong>
-                        <small>ab Level {building.level}</small>
-                      </span>
-                    </button>
-
-                    {isAllowed && (
-                      <label>
-                        Slots: {slotsByBuilding[building.name] || 1}
-                        <input
-                          type="range"
-                          min="1"
-                          max="10"
-                          step="1"
-                          value={slotsByBuilding[building.name] || 1}
-                          onChange={(event) =>
-                            setSlotsByBuilding((current) => ({
-                              ...current,
-                              [building.name]: Number(event.target.value)
-                            }))
-                          }
-                        />
-                      </label>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
           </details>
         </aside>
 
@@ -512,7 +533,7 @@ export default function Home() {
               XP
             </div>
             <div className="summaryCard">
-              <strong>{allowedBuildings.length}</strong>
+              <strong>{result.totals.buildings}</strong>
               Gebäude
             </div>
           </div>
@@ -531,11 +552,13 @@ export default function Home() {
                         <li key={`${entry.building}-${entry.product.key}`}>
                           <ProductIcon item={entry.product} />
                           <span>
-                            <strong>{entry.amount}× {entry.product.name}</strong>
+                            <strong>
+                              {entry.amount}× {entry.product.name}
+                            </strong>
                             <small>
-                              Level {entry.product.level} · {formatMinutes(entry.product.timeMin)} ·{" "}
-                              {formatMinutes(entry.effectiveTimeMin)} inkl. Vorprodukte ·{" "}
-                              {Math.round(entry.totalCoins)} Coins · {Math.round(entry.totalXp)} XP
+                              Level {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)} inkl.
+                              Vorprodukte · {entry.slots} Slots · {Math.round(entry.totalCoins)} Coins ·{" "}
+                              {Math.round(entry.totalXp)} XP
                             </small>
                           </span>
                         </li>
@@ -545,7 +568,9 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <p className="empty">Keine passenden Produkte gefunden.</p>
+              <p className="empty">
+                Keine passenden Produkte gefunden. Prüfe Level, Gebäudeauswahl oder Datenbankdaten.
+              </p>
             )}
           </section>
 
@@ -563,7 +588,9 @@ export default function Home() {
                         <li key={item.key}>
                           <ProductIcon item={item} />
                           <span>
-                            <strong>{item.amount}× {item.name}</strong>
+                            <strong>
+                              {item.amount}× {item.name}
+                            </strong>
                             <small>
                               {item.level ? `Level ${item.level}` : "ohne Level"}
                               {item.building ? ` · ${item.building}` : ""}
@@ -589,7 +616,9 @@ export default function Home() {
                   <li key={item.key}>
                     <ProductIcon item={item} />
                     <span>
-                      <strong>{item.amount}× {item.name}</strong>
+                      <strong>
+                        {item.amount}× {item.name}
+                      </strong>
                       <small>{item.building || "Zwischenprodukt"}</small>
                     </span>
                   </li>
