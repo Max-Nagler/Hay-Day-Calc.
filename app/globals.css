@@ -203,20 +203,24 @@ h3 {
 }
 
 .equalBuildingsPanel {
-  height: 100%;
-}
-
-.equalBuildingsPanel[open] {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
-.equalBuildingsPanel[open] > summary {
-  flex: 0 0 auto;
+.buildingPanelNoToggle {
+  overflow: hidden;
 }
 
-.equalBuildingsPanel[open] > .buildingActions {
+.panelStaticHeader {
   flex: 0 0 auto;
+  min-height: 46px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-warm);
+  font-size: 15px;
+  font-weight: 760;
+  letter-spacing: -0.01em;
 }
 
 details.panel {
@@ -399,27 +403,45 @@ select:focus {
   font-size: 11px;
 }
 
-.excludedQuickGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+.excludedSmartGrid {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.excludedChip {
-  min-height: 30px;
+.excludedSmartChip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  max-width: 145px;
   padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface-strong);
   color: var(--text);
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 800;
 }
 
-.excludedChip.active {
+.excludedSmartChip.active {
   border-color: rgba(229, 100, 88, 0.35);
   background: var(--red-soft);
   color: #9e332b;
+}
+
+.excludedSmartChip .visualIcon {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.excludedSmartChip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .excludedInputRow {
@@ -455,94 +477,6 @@ select:focus {
   font-weight: 750;
 }
 
-.multiSelectDropdown {
-  position: relative;
-  margin-bottom: 8px;
-}
-
-.multiSelectDropdown > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 34px;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-strong);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 800;
-  list-style: none;
-  cursor: pointer;
-}
-
-.multiSelectDropdown > summary::-webkit-details-marker {
-  display: none;
-}
-
-.multiSelectDropdown > summary::after {
-  content: "⌄";
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.multiSelectDropdown[open] > summary::after {
-  transform: rotate(180deg);
-}
-
-.multiSelectMenu {
-  position: absolute;
-  z-index: 20;
-  right: 0;
-  left: 0;
-  top: calc(100% + 5px);
-  display: grid;
-  gap: 4px;
-  max-height: 240px;
-  overflow: auto;
-  padding: 7px;
-  border: 1px solid var(--border-warm);
-  border-radius: 12px;
-  background: rgba(255, 250, 240, 0.98);
-  box-shadow: var(--shadow);
-}
-
-.multiSelectOption {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  gap: 7px;
-  align-items: center;
-  min-height: 34px;
-  padding: 5px 7px;
-  border-radius: 9px;
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.multiSelectOption:hover {
-  background: var(--surface-soft);
-}
-
-.multiSelectOption input {
-  width: 14px;
-  height: 14px;
-  accent-color: var(--green);
-}
-
-.multiSelectOption .visualIcon {
-  width: 24px;
-  height: 24px;
-  margin: 0;
-  border-radius: 6px;
-}
-
-.multiSelectOption span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .calculateButton {
   width: 100%;
   min-height: 42px;
@@ -576,8 +510,11 @@ select:focus {
   grid-template-columns: 74px 74px 1fr;
   gap: 8px;
   align-items: center;
+  flex: 0 0 auto;
   margin-top: 12px;
   margin-bottom: 10px;
+  margin-left: 16px;
+  margin-right: 16px;
 }
 
 .buildingActions button {
@@ -607,10 +544,13 @@ select:focus {
 
 .equalBuildingsGrid {
   flex: 1 1 auto;
-  max-height: none;
   min-height: 0;
+  max-height: none;
   overflow: auto;
   align-content: start;
+  padding: 0 16px 16px;
+  margin: 0;
+  overscroll-behavior: contain;
 }
 
 .buildingVisualGrid::-webkit-scrollbar {
@@ -625,6 +565,7 @@ select:focus {
 .buildingVisualCard {
   position: relative;
   min-width: 0;
+  padding-bottom: 52px;
 }
 
 .buildingVisualButton {
@@ -685,28 +626,38 @@ select:focus {
   z-index: 5;
   right: 0;
   left: 0;
-  top: calc(100% + 4px);
-  display: none;
-  gap: 6px;
-  padding: 8px;
+  top: calc(100% - 46px);
+  display: grid;
+  gap: 5px;
+  min-height: 48px;
+  padding: 7px;
   border: 1px solid var(--border-warm);
   border-radius: 12px;
   background: rgba(255, 250, 240, 0.98);
   box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
-.buildingVisualCard:hover .buildingSlotHover {
-  display: grid;
+.buildingVisualCard:hover .buildingSlotHover,
+.buildingVisualCard:focus-within .buildingSlotHover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .buildingSlotHover label {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .buildingSlotHover label span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 750;
 }
 
@@ -715,12 +666,12 @@ select:focus {
 }
 
 .buildingSlotHover button {
-  min-height: 26px;
+  min-height: 24px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-strong);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 750;
 }
 
@@ -855,12 +806,6 @@ select:focus {
   text-align: center;
 }
 
-.visualItemHoverWrap {
-  position: relative;
-  display: grid;
-  justify-items: center;
-}
-
 .visualIcon,
 .visualIcon.large {
   width: 68px;
@@ -905,71 +850,69 @@ select:focus {
   line-height: 1.1;
 }
 
-.ingredientHoverPanel {
-  position: absolute;
-  z-index: 30;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  display: none;
-  min-width: 118px;
-  max-width: 180px;
-  padding: 8px;
+.floatingIngredientPanel {
+  position: fixed;
+  z-index: 9999;
+  display: grid;
+  gap: 7px;
+  min-width: 138px;
+  max-width: 230px;
+  padding: 9px;
   border: 1px solid var(--border-warm);
-  border-radius: 12px;
+  border-radius: 13px;
   background: rgba(255, 250, 240, 0.98);
-  box-shadow: var(--shadow);
-  transform: translateX(-50%);
+  box-shadow: 0 12px 30px rgba(77, 55, 27, 0.18);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
 }
 
-.visualItem:hover .ingredientHoverPanel {
-  display: grid;
+.floatingIngredientPanel > strong {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.floatingIngredientGrid {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.ingredientHoverPanel::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 10px;
-  height: 10px;
-  border-right: 1px solid var(--border-warm);
-  border-bottom: 1px solid var(--border-warm);
-  background: rgba(255, 250, 240, 0.98);
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.ingredientHoverPanel > strong {
-  color: var(--muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.ingredientHoverGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.ingredientHoverItem {
+.floatingIngredientItem {
   display: grid;
   justify-items: center;
+  width: 42px;
   gap: 1px;
-  width: 34px;
 }
 
-.ingredientHoverItem .visualIcon {
-  width: 28px;
-  height: 28px;
+.floatingIngredientItem .visualIcon {
+  width: 30px;
+  height: 30px;
   margin: 0;
   border-radius: 7px;
 }
 
-.ingredientHoverItem span {
+.floatingIngredientItem span {
   color: var(--text);
   font-size: 9px;
-  font-weight: 850;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.floatingIngredientItem small {
+  width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 750;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ingredientHoverEmpty {
@@ -1085,8 +1028,8 @@ select:focus {
     height: auto;
   }
 
-  .equalBuildingsPanel[open] {
-    display: block;
+  .equalBuildingsGrid {
+    max-height: 520px;
   }
 }
 
@@ -1124,10 +1067,6 @@ select:focus {
     text-align: left;
   }
 
-  .excludedQuickGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .buildingVisualGrid {
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }
@@ -1138,9 +1077,5 @@ select:focus {
 
   .visualGroup {
     max-width: 100%;
-  }
-
-  .multiSelectMenu {
-    max-height: 210px;
   }
 }
