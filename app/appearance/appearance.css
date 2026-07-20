@@ -89,9 +89,24 @@
   font-weight: 900;
 }
 
+.appearanceControls {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1.15fr) minmax(200px, 0.9fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.themeSection {
+  align-content: start;
+}
+
+.paletteSection {
+  grid-column: 1 / -1;
+}
+
 .paletteSwatches {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
 }
 
@@ -155,4 +170,10 @@
 
 [data-theme="dark"] .paletteSwatches span {
   border-color: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 760px) {
+  .appearanceControls {
+    grid-template-columns: 1fr;
+  }
 }
