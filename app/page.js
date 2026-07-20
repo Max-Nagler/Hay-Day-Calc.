@@ -220,8 +220,7 @@ export default function Home() {
   const [hours, setHours] = useState(8);
   const [globalSlots, setGlobalSlots] = useState(5);
 
-  const [resolveToBaseIngredients, setResolveToBaseIngredients] = useState(false);
-  const [assumeIntermediateStock, setAssumeIntermediateStock] = useState(false);
+  const [intermediateMustBeProduced, setIntermediateMustBeProduced] = useState(false);
 
   const [allowedBuildings, setAllowedBuildings] = useState([]);
   const [userChangedBuildings, setUserChangedBuildings] = useState(false);
@@ -290,15 +289,7 @@ export default function Home() {
   useEffect(() => {
     setCalculationStarted(false);
     setCalculationSettings(null);
-  }, [
-    mode,
-    level,
-    hours,
-    globalSlots,
-    resolveToBaseIngredients,
-    assumeIntermediateStock,
-    allowedBuildings
-  ]);
+  }, [mode, level, hours, globalSlots, intermediateMustBeProduced, allowedBuildings]);
 
   const result = useMemo(() => {
     if (!calculationStarted || !calculationSettings) return null;
@@ -311,8 +302,7 @@ export default function Home() {
       hours: calculationSettings.hours,
       globalSlots: calculationSettings.globalSlots,
       allowedBuildings: calculationSettings.allowedBuildings,
-      assumeIntermediateStock: calculationSettings.assumeIntermediateStock,
-      resolveToBaseIngredients: calculationSettings.resolveToBaseIngredients
+      intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced
     });
   }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
 
@@ -347,8 +337,7 @@ export default function Home() {
       hours,
       globalSlots,
       allowedBuildings,
-      assumeIntermediateStock,
-      resolveToBaseIngredients
+      intermediateMustBeProduced
     });
 
     setCalculationStarted(true);
@@ -449,32 +438,24 @@ export default function Home() {
             )}
           </details>
 
-          <details open={baseSettingsComplete} className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}>
+          <details
+            open={baseSettingsComplete}
+            className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
+          >
             <summary>Zusätzliche Einstellungen</summary>
 
             {!baseSettingsComplete ? (
               <p className="empty">Wird nach den Grunddaten freigeschaltet.</p>
             ) : (
               <>
-                <div className="compactCheckboxGrid">
-                  <label className="checkbox compactCheckbox">
-                    <input
-                      type="checkbox"
-                      checked={resolveToBaseIngredients}
-                      onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
-                    />
-                    Grundzutaten
-                  </label>
-
-                  <label className="checkbox compactCheckbox">
-                    <input
-                      type="checkbox"
-                      checked={assumeIntermediateStock}
-                      onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
-                    />
-                    Lagerbestand
-                  </label>
-                </div>
+                <label className="checkbox compactCheckbox singleCheckbox">
+                  <input
+                    type="checkbox"
+                    checked={intermediateMustBeProduced}
+                    onChange={(event) => setIntermediateMustBeProduced(event.target.checked)}
+                  />
+                  Zwischenprodukte müssen hergestellt werden
+                </label>
 
                 <button
                   type="button"
@@ -570,14 +551,19 @@ export default function Home() {
 
                       <ul className="itemList compactItems">
                         {group.items.map((entry) => (
-                          <li key={`${entry.building}-${entry.product.key}`}>
+                          <li
+                            key={`${entry.building}-${entry.product.key}-${entry.role}`}
+                            className={entry.role === "intermediate" ? "intermediateItem" : ""}
+                          >
                             <ProductIcon item={entry.product} />
                             <span>
                               <strong>
                                 {entry.amount}× {entry.product.name}
                               </strong>
                               <small>
+                                {entry.role === "intermediate" ? "Zwischenprodukt · " : ""}
                                 Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)} ·{" "}
+                                {entry.slotsUsed}/{entry.slots} Slots ·{" "}
                                 {Math.round(entry.totalCoins)} Coins · {Math.round(entry.totalXp)} XP
                               </small>
                             </span>
