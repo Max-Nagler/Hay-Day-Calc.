@@ -463,11 +463,11 @@ select:focus {
   text-align: right;
 }
 
-/* Gebäude mit kleineren einheitlichen Icons */
+/* Gebäude */
 
 .buildingVisualGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 8px;
   max-height: 430px;
   overflow: auto;
@@ -492,7 +492,7 @@ select:focus {
   display: grid;
   justify-items: center;
   width: 100%;
-  min-height: 96px;
+  min-height: 122px;
   padding: 8px 6px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -507,11 +507,11 @@ select:focus {
 }
 
 .buildingVisualIcon {
-  width: 34px;
-  height: 34px;
-  margin-bottom: 5px;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 4px;
   object-fit: contain;
-  border-radius: 9px;
+  border-radius: 10px;
 }
 
 .buildingVisualIcon.fallback {
@@ -519,7 +519,7 @@ select:focus {
   place-items: center;
   background: rgba(70, 161, 113, 0.12);
   color: var(--green);
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 900;
 }
 
@@ -529,16 +529,16 @@ select:focus {
   color: var(--text);
   font-size: 10px;
   font-weight: 850;
-  line-height: 1.12;
+  line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .buildingVisualMeta {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--muted);
   font-size: 9px;
-  line-height: 1.12;
+  line-height: 1.1;
 }
 
 .buildingSlotHover {
@@ -652,13 +652,13 @@ select:focus {
   margin-bottom: 16px;
 }
 
-/* Produkt- und Zutatenliste mit kleinen einheitlichen Icons */
+/* Produkt- und Zutatenliste kompakter mit größeren Icons */
 
 .visualProductionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 14px;
-  margin-top: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .visualGroup {
@@ -666,9 +666,9 @@ select:focus {
 }
 
 .visualGroup h3 {
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -676,32 +676,32 @@ select:focus {
 
 .visualItemGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 7px;
 }
 
 .visualItemGrid.standalone {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .visualItem {
   display: grid;
   justify-items: center;
-  min-height: 112px;
-  padding: 8px 6px;
+  min-height: 130px;
+  padding: 7px 5px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 13px;
   background: var(--surface-strong);
   text-align: center;
 }
 
 .visualIcon,
 .visualIcon.large {
-  width: 36px;
-  height: 36px;
-  margin-bottom: 4px;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 2px;
   object-fit: contain;
-  border-radius: 9px;
+  border-radius: 10px;
 }
 
 .visualIcon.fallback,
@@ -710,33 +710,33 @@ select:focus {
   place-items: center;
   background: var(--green-soft);
   color: var(--green);
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 900;
 }
 
 .visualItem strong {
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
 }
 
 .visualItem span {
   width: 100%;
   overflow: hidden;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--text);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  line-height: 1.12;
+  line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .visualItem small {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
-  line-height: 1.18;
+  font-size: 8px;
+  line-height: 1.1;
 }
 
 .intermediateItem {
@@ -748,15 +748,13 @@ select:focus {
   background: rgba(255, 255, 255, 0.82);
 }
 
-/* alte Icon-Klassen sicher angleichen */
-
 .iconFallback,
 .iconImage {
-  width: 36px;
-  height: 36px;
+  width: 72px;
+  height: 72px;
   flex: 0 0 auto;
   object-fit: contain;
-  border-radius: 9px;
+  border-radius: 10px;
 }
 
 .iconFallback {
@@ -764,7 +762,7 @@ select:focus {
   place-items: center;
   background: var(--green-soft);
   color: var(--green);
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 850;
 }
 
@@ -848,8 +846,11 @@ select:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .buildingVisualGrid,
+  .buildingVisualGrid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
+
   .visualItemGrid {
-    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
   }
 }
