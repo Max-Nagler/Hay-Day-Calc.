@@ -122,7 +122,17 @@ export default function AppearanceSettings() {
   return (
     <main className="shell embedShell appearanceShell">
       <section className="panel compactPanel appearancePanel">
-        <div className="panelStaticHeader">Optische Einstellungen</div>
+        <div className="panelStaticHeader appearanceHeader">
+          <span>Optische Einstellungen</span>
+          <div className="appearanceHeaderActions">
+            <button type="button" onClick={saveAppearance}>
+              Speichern
+            </button>
+            <button type="button" onClick={resetAppearance}>
+              Zurücksetzen
+            </button>
+          </div>
+        </div>
 
         <div className="appearanceBody">
           <div className="appearanceToolbar">
@@ -248,29 +258,40 @@ export default function AppearanceSettings() {
 
           <details className="appearanceAdvanced">
             <summary>Embed-Größe anpassen</summary>
-            <label className="field compactField">
-              <span>Zoom der Appearance-Seite: {appearance.pageZoom}%</span>
-              <input
-                type="range"
-                min="75"
-                max="125"
-                step="5"
-                value={appearance.pageZoom}
-                onChange={(event) => updateValue("pageZoom", Number(event.target.value))}
-              />
-            </label>
+
+            <div className="zoomPanel">
+              <label className="field compactField">
+                <span>Zoom der Appearance-Seite: {appearance.pageZoom}%</span>
+                <input
+                  type="range"
+                  min="75"
+                  max="125"
+                  step="5"
+                  value={appearance.pageZoom}
+                  onChange={(event) => updateValue("pageZoom", Number(event.target.value))}
+                />
+              </label>
+
+              <div className="zoomPresets">
+                {[85, 100, 115].map((zoom) => (
+                  <button
+                    key={zoom}
+                    type="button"
+                    className={appearance.pageZoom === zoom ? "active" : ""}
+                    onClick={() => updateValue("pageZoom", zoom)}
+                  >
+                    {zoom}%
+                  </button>
+                ))}
+              </div>
+
+              <p className="helperText inlineHelper">
+                Nur für das Notion-Embed: kleiner, wenn die Leiste abgeschnitten wirkt; größer, wenn zu viel leerer Raum bleibt.
+              </p>
+            </div>
           </details>
 
-          <div className="appearanceActions">
-            <button type="button" onClick={saveAppearance}>
-              Speichern
-            </button>
-            <button type="button" onClick={resetAppearance}>
-              Zurücksetzen
-            </button>
-          </div>
-
-          {saved && <p className="helperText inlineHelper">Gespeichert.</p>}
+          {saved && <p className="helperText inlineHelper savedInline">Gespeichert.</p>}
         </div>
       </section>
     </main>
