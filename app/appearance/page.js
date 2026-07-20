@@ -19,6 +19,7 @@ const defaultAppearance = {
   cardScale: 100,
   textScale: 100,
   iconScale: 100,
+  pageZoom: 100,
   palette: "hay",
   showMeta: true,
   iconsOnly: false
@@ -67,6 +68,7 @@ function applyAppearance(appearance, effectiveTheme) {
   document.documentElement.style.setProperty("--card-scale", String(appearance.cardScale / 100));
   document.documentElement.style.setProperty("--text-scale", String(appearance.textScale / 100));
   document.documentElement.style.setProperty("--icon-scale", String(appearance.iconScale / 100));
+  document.documentElement.style.setProperty("--appearance-page-zoom", String(appearance.pageZoom / 100));
 }
 
 export default function AppearanceSettings() {
@@ -78,6 +80,7 @@ export default function AppearanceSettings() {
   }, []);
 
   const effectiveTheme = useMemo(() => getEffectiveTheme(appearance.theme), [appearance.theme]);
+  const selectedPalette = paletteById.get(appearance.palette) || colorPalettes[0];
 
   useEffect(() => {
     applyAppearance(appearance, effectiveTheme);
@@ -122,27 +125,47 @@ export default function AppearanceSettings() {
         <div className="panelStaticHeader">Optische Einstellungen</div>
 
         <div className="appearanceBody">
-          <div className="appearanceControls">
-            <section className="appearanceSection themeSection">
-              <h2>Theme</h2>
-              <div className="appearanceSegment">
-                {[
-                  { id: "light", label: "Light" },
-                  { id: "dark", label: "Dark" },
-                  { id: "system", label: "System" }
-                ].map((theme) => (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    className={appearance.theme === theme.id ? "active" : ""}
-                    onClick={() => updateValue("theme", theme.id)}
-                  >
-                    {theme.label}
-                  </button>
-                ))}
-              </div>
-            </section>
+          <section className="appearanceSection themeSection">
+            <h2>Theme</h2>
+            <div className="appearanceSegment">
+              {[
+                { id: "light", label: "Light" },
+                { id: "dark", label: "Dark" },
+                { id: "system", label: "System" }
+              ].map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  className={appearance.theme === theme.id ? "active" : ""}
+                  onClick={() => updateValue("theme", theme.id)}
+                >
+                  {theme.label}
+                </button>
+              ))}
+            </div>
 
+            <div className="tileSettingsInline">
+              <label className="checkbox compactCheckbox singleCheckbox">
+                <input
+                  type="checkbox"
+                  checked={appearance.showMeta}
+                  onChange={(event) => updateValue("showMeta", event.target.checked)}
+                />
+                Zusatzinfos
+              </label>
+
+              <label className="checkbox compactCheckbox singleCheckbox">
+                <input
+                  type="checkbox"
+                  checked={appearance.iconsOnly}
+                  onChange={(event) => updateValue("iconsOnly", event.target.checked)}
+                />
+                Nur Icons
+              </label>
+            </div>
+          </section>
+
+          <div className="appearanceMainGrid">
             <section className="appearanceSection">
               <h2>Darstellung</h2>
 
@@ -183,63 +206,58 @@ export default function AppearanceSettings() {
               </label>
             </section>
 
-            <section className="appearanceSection">
-              <h2>Kacheln</h2>
+            <section className="appearanceSection paletteSection">
+              <h2>Design-Farbkombination</h2>
 
-              <label className="checkbox compactCheckbox singleCheckbox">
-                <input
-                  type="checkbox"
-                  checked={appearance.showMeta}
-                  onChange={(event) => updateValue("showMeta", event.target.checked)}
-                />
-                Zusatzinfos anzeigen
-              </label>
-
-              <label className="checkbox compactCheckbox singleCheckbox">
-                <input
-                  type="checkbox"
-                  checked={appearance.iconsOnly}
-                  onChange={(event) => updateValue("iconsOnly", event.target.checked)}
-                />
-                Nur Icons anzeigen
-              </label>
-            </section>
-          </div>
-
-          <section className="appearanceSection paletteSection">
-            <h2>Design-Farbkombination</h2>
-            <div className="paletteGrid">
-              {colorPalettes.map((palette) => (
-                <button
-                  key={palette.id}
-                  type="button"
-                  className={appearance.palette === palette.id ? "paletteOption active" : "paletteOption"}
-                  onClick={() => updateValue("palette", palette.id)}
-                  title={palette.label}
+              <label className="field compactField">
+                <span>Design-Farben</span>
+                <select
+                  value={appearance.palette}
+                  onChange={(event) => updateValue("palette", event.target.value)}
                 >
-                  <span className="paletteName">{palette.label}</span>
-                  <span className="paletteSwatches">
-                    {palette.colors.map((color) => (
-                      <span key={color} style={{ background: color }} />
-                    ))}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+                  {colorPalettes.map((palette) => (
+                    <option key={palette.id} value={palette.id}>
+                      {palette.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-          <div className={appearance.iconsOnly ? "appearancePreview iconsOnly" : "appearancePreview"}>
-            <article className="visualItem">
-              <span className="visualIcon large fallback">V</span>
-              {!appearance.iconsOnly && (
-                <>
-                  <strong>3×</strong>
-                  <span>Vorschau</span>
-                  {appearance.showMeta && <small>Lv. 1 · 30 min</small>}
-                </>
-              )}
-            </article>
+              <div className="paletteSwatches selectedPaletteSwatches" aria-label={`${selectedPalette.label} Farben`}>
+                {selectedPalette.colors.map((color) => (
+                  <span key={color} style={{ background: color }} />
+                ))}
+              </div>
+            </section>
+
+            <div className={appearance.iconsOnly ? "appearancePreview iconsOnly" : "appearancePreview"}>
+              <article className="visualItem">
+                <span className="visualIcon large fallback">V</span>
+                {!appearance.iconsOnly && (
+                  <>
+                    <strong>3×</strong>
+                    <span>Vorschau</span>
+                    {appearance.showMeta && <small>Lv. 1 · 30 min</small>}
+                  </>
+                )}
+              </article>
+            </div>
           </div>
+
+          <details className="appearanceAdvanced">
+            <summary>Embed-Größe anpassen</summary>
+            <label className="field compactField">
+              <span>Zoom der Appearance-Seite: {appearance.pageZoom}%</span>
+              <input
+                type="range"
+                min="75"
+                max="125"
+                step="5"
+                value={appearance.pageZoom}
+                onChange={(event) => updateValue("pageZoom", Number(event.target.value))}
+              />
+            </label>
+          </details>
 
           <div className="appearanceActions">
             <button type="button" onClick={saveAppearance}>
