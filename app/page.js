@@ -223,12 +223,19 @@ function ProductIcon({ item }) {
   return <span className="iconFallback">{firstLetter}</span>;
 }
 
-function StepperButton({ children, onClick }) {
+function StepperButton({ children, onClick, disabled }) {
   return (
-    <button className="stepperButton" type="button" onClick={onClick}>
+    <button className="stepperButton" type="button" onClick={onClick} disabled={disabled}>
       {children}
     </button>
   );
+}
+
+function parseNumberInput(value) {
+  if (value === "" || value === null || value === undefined) return null;
+
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 export default function Home() {
@@ -236,16 +243,19 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const [mode, setMode] = useState("coins");
-  const [level, setLevel] = useState(33);
-  const [hours, setHours] = useState(8);
-  const [globalSlots, setGlobalSlots] = useState(5);
+  const [mode, setMode] = useState("");
+  const [levelInput, setLevelInput] = useState("");
+  const [hoursInput, setHoursInput] = useState("");
+  const [globalSlotsInput, setGlobalSlotsInput] = useState("");
 
-  const [resolveToBaseIngredients, setResolveToBaseIngredients] = useState(true);
+  const [resolveToBaseIngredients, setResolveToBaseIngredients] = useState(false);
   const [assumeIntermediateStock, setAssumeIntermediateStock] = useState(false);
 
   const [allowedBuildings, setAllowedBuildings] = useState([]);
   const [userChangedBuildings, setUserChangedBuildings] = useState(false);
+
+  const [calculationStarted, setCalculationStarted] = useState(false);
+  const [calculationSettings, setCalculationSettings] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -273,10 +283,23 @@ export default function Home() {
     loadData();
   }, []);
 
+  const level = parseNumberInput(levelInput);
+  const hours = parseNumberInput(hoursInput);
+  const globalSlots = parseNumberInput(globalSlotsInput);
+
+  const baseSettingsComplete =
+    Boolean(mode) &&
+    level !== null &&
+    level >= 1 &&
+    hours !== null &&
+    hours >= 1 &&
+    globalSlots !== null &&
+    globalSlots >= 1;
+
   const normalized = useMemo(() => normalizeData(rawData), [rawData]);
 
   const availableBuildings = useMemo(
-    () => getAvailableBuildings(normalized.products, level),
+    () => getAvailableBuildings(normalized.products, level || 0),
     [normalized.products, level]
   );
 
@@ -286,6 +309,12 @@ export default function Home() {
   );
 
   useEffect(() => {
+    if (!baseSettingsComplete) {
+      setAllowedBuildings([]);
+      setUserChangedBuildings(false);
+      return;
+    }
+
     setAllowedBuildings((current) => {
       const stillAvailable = current.filter((name) => availableBuildingNames.includes(name));
 
@@ -295,34 +324,40 @@ export default function Home() {
 
       return stillAvailable;
     });
-  }, [availableBuildingNames, userChangedBuildings]);
+  }, [availableBuildingNames, baseSettingsComplete, userChangedBuildings]);
+
+  useEffect(() => {
+    setCalculationStarted(false);
+    setCalculationSettings(null);
+  }, [
+    mode,
+    levelInput,
+    hoursInput,
+    globalSlotsInput,
+    resolveToBaseIngredients,
+    assumeIntermediateStock,
+    allowedBuildings
+  ]);
 
   const result = useMemo(() => {
+    if (!calculationStarted || !calculationSettings) return null;
+
     return calculateProductionPlan({
       products: normalized.products,
       recipes: normalized.recipes,
-      mode,
-      level,
-      hours,
-      globalSlots,
-      allowedBuildings,
-      assumeIntermediateStock,
-      resolveToBaseIngredients
+      mode: calculationSettings.mode,
+      level: calculationSettings.level,
+      hours: calculationSettings.hours,
+      globalSlots: calculationSettings.globalSlots,
+      allowedBuildings: calculationSettings.allowedBuildings,
+      assumeIntermediateStock: calculationSettings.assumeIntermediateStock,
+      resolveToBaseIngredients: calculationSettings.resolveToBaseIngredients
     });
-  }, [
-    normalized.products,
-    normalized.recipes,
-    mode,
-    level,
-    hours,
-    globalSlots,
-    allowedBuildings,
-    assumeIntermediateStock,
-    resolveToBaseIngredients
-  ]);
+  }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
 
   function changeLevel(delta) {
-    setLevel((current) => Math.max(1, current + delta));
+    const current = parseNumberInput(levelInput) || 1;
+    setLevelInput(String(Math.max(1, current + delta)));
     setUserChangedBuildings(false);
   }
 
@@ -348,6 +383,22 @@ export default function Home() {
     setAllowedBuildings([]);
   }
 
+  function startCalculation() {
+    if (!baseSettingsComplete) return;
+
+    setCalculationSettings({
+      mode,
+      level,
+      hours,
+      globalSlots,
+      allowedBuildings,
+      assumeIntermediateStock,
+      resolveToBaseIngredients
+    });
+
+    setCalculationStarted(true);
+  }
+
   return (
     <main className="shell">
       <section className="hero">
@@ -355,8 +406,8 @@ export default function Home() {
           <p className="eyebrow">Hay Day Calc.</p>
           <h1>Produktionsplan für deine Farm.</h1>
           <p className="subtitle">
-            Wähle Modus, Level, Zeitfenster und Gebäude. Der Rechner erstellt
-            für jedes ausgewählte Gebäude eine eigene Warteschlange.
+            Gib zuerst die Grunddaten ein. Danach öffnet sich der nächste Schritt
+            und du kannst die Berechnung starten.
           </p>
         </div>
 
@@ -403,16 +454,23 @@ export default function Home() {
                 <input
                   type="number"
                   min="1"
-                  value={level}
+                  placeholder="z. B. 33"
+                  value={levelInput}
                   onChange={(event) => {
-                    setLevel(Math.max(1, Number(event.target.value)));
+                    setLevelInput(event.target.value);
                     setUserChangedBuildings(false);
                   }}
                 />
                 <div className="stepper">
-                  <StepperButton onClick={() => changeLevel(-10)}>-10</StepperButton>
-                  <StepperButton onClick={() => changeLevel(-5)}>-5</StepperButton>
-                  <StepperButton onClick={() => changeLevel(-1)}>-1</StepperButton>
+                  <StepperButton onClick={() => changeLevel(-10)} disabled={!levelInput}>
+                    -10
+                  </StepperButton>
+                  <StepperButton onClick={() => changeLevel(-5)} disabled={!levelInput}>
+                    -5
+                  </StepperButton>
+                  <StepperButton onClick={() => changeLevel(-1)} disabled={!levelInput}>
+                    -1
+                  </StepperButton>
                   <StepperButton onClick={() => changeLevel(1)}>+1</StepperButton>
                   <StepperButton onClick={() => changeLevel(5)}>+5</StepperButton>
                   <StepperButton onClick={() => changeLevel(10)}>+10</StepperButton>
@@ -421,221 +479,292 @@ export default function Home() {
             </label>
 
             <label className="field">
-              <span>Produktionsdauer: {hours} h</span>
+              <span>Produktionsdauer in Stunden</span>
               <input
-                type="range"
+                type="number"
                 min="1"
                 max="48"
-                step="1"
-                value={hours}
-                onChange={(event) => setHours(Number(event.target.value))}
+                placeholder="1–48"
+                value={hoursInput}
+                onChange={(event) => setHoursInput(event.target.value)}
               />
             </label>
+
+            {hours !== null && hours >= 1 && (
+              <label className="field">
+                <span>Produktionsdauer: {hours} h</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="48"
+                  step="1"
+                  value={hours}
+                  onChange={(event) => setHoursInput(event.target.value)}
+                />
+              </label>
+            )}
 
             <label className="field">
-              <span>Freie Slots pro Warteschlange: {globalSlots}</span>
+              <span>Freie Slots pro Warteschlange</span>
               <input
-                type="range"
+                type="number"
                 min="1"
                 max="10"
-                step="1"
-                value={globalSlots}
-                onChange={(event) => setGlobalSlots(Number(event.target.value))}
+                placeholder="1–10"
+                value={globalSlotsInput}
+                onChange={(event) => setGlobalSlotsInput(event.target.value)}
               />
             </label>
+
+            {globalSlots !== null && globalSlots >= 1 && (
+              <label className="field">
+                <span>Freie Slots: {globalSlots}</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={globalSlots}
+                  onChange={(event) => setGlobalSlotsInput(event.target.value)}
+                />
+              </label>
+            )}
+
+            {!baseSettingsComplete && (
+              <p className="helperText inlineHelper">
+                Wähle einen Rechenmodus und gib Level, Produktionsdauer und freie
+                Slots ein.
+              </p>
+            )}
           </details>
 
-          <details className="panel">
+          <details open={baseSettingsComplete} className={baseSettingsComplete ? "panel" : "panel disabled"}>
             <summary>Zusätzliche Einstellungen</summary>
 
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={resolveToBaseIngredients}
-                onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
-              />
-              Bis auf Grundzutaten zurückrechnen
-            </label>
+            {!baseSettingsComplete ? (
+              <p className="empty">
+                Wird freigeschaltet, sobald die Grunddaten vollständig sind.
+              </p>
+            ) : (
+              <>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={resolveToBaseIngredients}
+                    onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
+                  />
+                  Bis auf Grundzutaten zurückrechnen
+                </label>
 
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={assumeIntermediateStock}
-                onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
-              />
-              Zwischenprodukte sind bereits auf Lager
-            </label>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={assumeIntermediateStock}
+                    onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
+                  />
+                  Zwischenprodukte sind bereits auf Lager
+                </label>
+
+                <button
+                  type="button"
+                  className="calculateButton"
+                  onClick={startCalculation}
+                  disabled={allowedBuildings.length === 0}
+                >
+                  Berechnung starten
+                </button>
+
+                {allowedBuildings.length === 0 && (
+                  <p className="helperText inlineHelper">
+                    Wähle mindestens ein Produktionsgebäude aus.
+                  </p>
+                )}
+              </>
+            )}
           </details>
         </div>
 
         <div className="buildingsColumn">
-          <details className="panel">
+          <details className={baseSettingsComplete ? "panel" : "panel disabled"}>
             <summary>Produktionsgebäude</summary>
 
-            <div className="buildingActions">
-              <button type="button" onClick={selectAllBuildings}>
-                Alle auswählen
-              </button>
-              <button type="button" onClick={clearAllBuildings}>
-                Keine
-              </button>
-            </div>
+            {!baseSettingsComplete ? (
+              <p className="empty">
+                Gebäude werden angezeigt, sobald die Grunddaten vollständig sind.
+              </p>
+            ) : (
+              <>
+                <div className="buildingActions">
+                  <button type="button" onClick={selectAllBuildings}>
+                    Alle auswählen
+                  </button>
+                  <button type="button" onClick={clearAllBuildings}>
+                    Keine
+                  </button>
+                </div>
 
-            <p className="helperText">
-              Standardmäßig sind alle Gebäude ausgewählt, die bei Level {level} verfügbar sind.
-            </p>
+                <p className="helperText">
+                  Standardmäßig sind alle Gebäude ausgewählt, die bei Level {level} verfügbar sind.
+                </p>
 
-            <div className="buildingList">
-              {availableBuildings.map((building) => {
-                const isAllowed = allowedBuildings.includes(building.name);
+                <div className="buildingList">
+                  {availableBuildings.map((building) => {
+                    const isAllowed = allowedBuildings.includes(building.name);
 
-                return (
-                  <div
-                    key={building.name}
-                    className={isAllowed ? "buildingCard active" : "buildingCard"}
-                  >
-                    <button type="button" onClick={() => toggleBuilding(building.name)}>
-                      <span className="iconFallback small">
-                        {building.name.slice(0, 1)}
-                      </span>
-                      <span>
-                        <strong>{building.name}</strong>
-                        <small>
-                          ab Level {building.level} · {isAllowed ? "aktiv" : "ausgeschlossen"}
-                        </small>
-                      </span>
-                    </button>
+                    return (
+                      <div
+                        key={building.name}
+                        className={isAllowed ? "buildingCard active" : "buildingCard"}
+                      >
+                        <button type="button" onClick={() => toggleBuilding(building.name)}>
+                          <span className="iconFallback small">
+                            {building.name.slice(0, 1)}
+                          </span>
+                          <span>
+                            <strong>{building.name}</strong>
+                            <small>
+                              ab Level {building.level} · {isAllowed ? "aktiv" : "ausgeschlossen"}
+                            </small>
+                          </span>
+                        </button>
 
-                    {isAllowed && (
-                      <p className="buildingHint">
-                        nutzt globale Sloteinstellung: {globalSlots}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                        {isAllowed && (
+                          <p className="buildingHint">
+                            nutzt globale Sloteinstellung: {globalSlots}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </details>
         </div>
       </section>
 
-      <section className="summaryGrid belowSettings">
-        <div className="summaryCard">
-          <strong>{result.totals.products}</strong>
-          Produkte
-        </div>
-        <div className="summaryCard">
-          <strong>{Math.round(result.totals.coins)}</strong>
-          Coins
-        </div>
-        <div className="summaryCard">
-          <strong>{Math.round(result.totals.xp)}</strong>
-          XP
-        </div>
-        <div className="summaryCard">
-          <strong>{result.totals.buildings}</strong>
-          Gebäude
-        </div>
-      </section>
-
-      <section className="output belowSettings">
-        <details className="panel">
-          <summary>Produktionsliste</summary>
-
-          {result.productionByBuilding.length ? (
-            <div className="productionGroups">
-              {result.productionByBuilding.map((group) => (
-                <div key={group.building} className="productionGroup">
-                  <h3>{group.building}</h3>
-
-                  <ul className="itemList">
-                    {group.items.map((entry) => (
-                      <li key={`${entry.building}-${entry.product.key}`}>
-                        <ProductIcon item={entry.product} />
-                        <span>
-                          <strong>
-                            {entry.amount}× {entry.product.name}
-                          </strong>
-                          <small>
-                            Level {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)} inkl.
-                            Vorprodukte · {entry.slots} Slots · {Math.round(entry.totalCoins)} Coins ·{" "}
-                            {Math.round(entry.totalXp)} XP
-                          </small>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+      {result && (
+        <>
+          <section className="summaryGrid belowSettings">
+            <div className="summaryCard">
+              <strong>{result.totals.products}</strong>
+              Produkte
             </div>
-          ) : (
-            <p className="empty">
-              Keine passenden Produkte gefunden. Prüfe Level, Gebäudeauswahl oder Datenbankdaten.
-            </p>
-          )}
-        </details>
-
-        <details className="panel">
-          <summary>Zutatenliste</summary>
-
-          {result.ingredientGroups.length ? (
-            <div className="ingredientGroups">
-              {result.ingredientGroups.map((group) => (
-                <div key={group.title} className="ingredientGroup">
-                  <h3>{group.title}</h3>
-
-                  <ul className="itemList compact">
-                    {group.items.map((item) => (
-                      <li key={item.key}>
-                        <ProductIcon item={item} />
-                        <span>
-                          <strong>
-                            {item.amount}× {item.name}
-                          </strong>
-                          <small>
-                            {item.level ? `Level ${item.level}` : "ohne Level"}
-                            {item.building ? ` · ${item.building}` : ""}
-                          </small>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+            <div className="summaryCard">
+              <strong>{Math.round(result.totals.coins)}</strong>
+              Coins
             </div>
-          ) : (
-            <p className="empty">Keine Zutaten gefunden.</p>
-          )}
-        </details>
-
-        {result.intermediateProducts.length > 0 && (
-          <details className="panel">
-            <summary>Zwischenprodukte</summary>
-
-            <ul className="itemList compact">
-              {result.intermediateProducts.map((item) => (
-                <li key={item.key}>
-                  <ProductIcon item={item} />
-                  <span>
-                    <strong>
-                      {item.amount}× {item.name}
-                    </strong>
-                    <small>{item.building || "Zwischenprodukt"}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-
-        {result.warnings.length > 0 && (
-          <section className="warnings">
-            {result.warnings.map((warning) => (
-              <p key={warning}>{warning}</p>
-            ))}
+            <div className="summaryCard">
+              <strong>{Math.round(result.totals.xp)}</strong>
+              XP
+            </div>
+            <div className="summaryCard">
+              <strong>{result.totals.buildings}</strong>
+              Gebäude
+            </div>
           </section>
-        )}
-      </section>
+
+          <section className="output belowSettings">
+            <details className="panel">
+              <summary>Produktionsliste</summary>
+
+              {result.productionByBuilding.length ? (
+                <div className="productionGroups">
+                  {result.productionByBuilding.map((group) => (
+                    <div key={group.building} className="productionGroup">
+                      <h3>{group.building}</h3>
+
+                      <ul className="itemList">
+                        {group.items.map((entry) => (
+                          <li key={`${entry.building}-${entry.product.key}`}>
+                            <ProductIcon item={entry.product} />
+                            <span>
+                              <strong>
+                                {entry.amount}× {entry.product.name}
+                              </strong>
+                              <small>
+                                Level {entry.product.level} ·{" "}
+                                {formatMinutes(entry.effectiveTimeMin)} inkl. Vorprodukte ·{" "}
+                                {entry.slots} Slots · {Math.round(entry.totalCoins)} Coins ·{" "}
+                                {Math.round(entry.totalXp)} XP
+                              </small>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="empty">
+                  Keine passenden Produkte gefunden. Prüfe Level, Gebäudeauswahl oder Datenbankdaten.
+                </p>
+              )}
+            </details>
+
+            <details className="panel">
+              <summary>Zutatenliste</summary>
+
+              {result.ingredientGroups.length ? (
+                <div className="ingredientGroups">
+                  {result.ingredientGroups.map((group) => (
+                    <div key={group.title} className="ingredientGroup">
+                      <h3>{group.title}</h3>
+
+                      <ul className="itemList compact">
+                        {group.items.map((item) => (
+                          <li key={item.key}>
+                            <ProductIcon item={item} />
+                            <span>
+                              <strong>
+                                {item.amount}× {item.name}
+                              </strong>
+                              <small>
+                                {item.level ? `Level ${item.level}` : "ohne Level"}
+                                {item.building ? ` · ${item.building}` : ""}
+                              </small>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="empty">Keine Zutaten gefunden.</p>
+              )}
+            </details>
+
+            {result.intermediateProducts.length > 0 && (
+              <details className="panel">
+                <summary>Zwischenprodukte</summary>
+
+                <ul className="itemList compact">
+                  {result.intermediateProducts.map((item) => (
+                    <li key={item.key}>
+                      <ProductIcon item={item} />
+                      <span>
+                        <strong>
+                          {item.amount}× {item.name}
+                        </strong>
+                        <small>{item.building || "Zwischenprodukt"}</small>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+
+            {result.warnings.length > 0 && (
+              <section className="warnings">
+                {result.warnings.map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+              </section>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }
