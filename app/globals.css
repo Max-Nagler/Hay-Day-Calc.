@@ -180,6 +180,10 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.compactPanel {
+  overflow: hidden;
+}
+
 .panel.disabled {
   opacity: 0.55;
   filter: grayscale(0.12);
@@ -438,6 +442,17 @@ select:focus {
   transform: translateY(-1px);
 }
 
+.ghostButton {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .buildingActions {
   display: grid;
   grid-template-columns: 74px 74px 1fr;
@@ -654,11 +669,11 @@ select:focus {
 }
 
 /* Produktions- und Zutatenliste:
-   echtes flexibles Wrapping.
+   flexibles Wrapping.
    Jede Gruppe ist ein Block:
    [Gebäudename]
    [Produkt] [Produkt] [...]
-   Der nächste Block rutscht direkt daneben, wenn Platz ist. */
+*/
 
 .visualProductionGrid {
   display: flex;
@@ -817,6 +832,39 @@ select:focus {
   margin-top: 5px;
 }
 
+/* Embed-Seiten */
+
+.embedShell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px;
+}
+
+.outputEmbedShell {
+  padding-bottom: 22px;
+}
+
+.embedHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.embedHeader h1 {
+  margin-bottom: 0;
+  font-size: clamp(22px, 4vw, 32px);
+}
+
+.miniStatus {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  text-align: right;
+}
+
 @media (max-width: 960px) {
   .shell {
     padding: 18px;
@@ -844,6 +892,14 @@ select:focus {
 @media (max-width: 620px) {
   .shell {
     padding: 14px;
+  }
+
+  .embedShell {
+    padding: 10px;
+  }
+
+  .embedHeader {
+    align-items: flex-start;
   }
 
   h1 {
