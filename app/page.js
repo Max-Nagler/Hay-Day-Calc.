@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { calculateProductionPlan, getAvailableBuildings } from "../lib/calculator";
+import { normalizeData } from "../lib/normalize";
 
-const fallbackData = {
+const fallbackRawData = {
+  ok: true,
   syncedAt: null,
   mainDatabase: [
     {
@@ -12,13 +15,14 @@ const fallbackData = {
         Level: { type: "number", number: 2 },
         XP: { type: "number", number: 3 },
         MaxPreis: { type: "number", number: 21 },
-        Produktionszeit: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "4 min" }]
-        },
+        "Produktionszeit Minuten": { type: "number", number: 4 },
         Gebäude: {
           type: "rich_text",
           rich_text: [{ plain_text: "Bäckerei" }]
+        },
+        Typ: {
+          type: "select",
+          select: { name: "Produktionsgebäude" }
         }
       }
     },
@@ -29,13 +33,14 @@ const fallbackData = {
         Level: { type: "number", number: 12 },
         XP: { type: "number", number: 15 },
         MaxPreis: { type: "number", number: 122 },
-        Produktionszeit: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "51 min" }]
-        },
+        "Produktionszeit Minuten": { type: "number", number: 51 },
         Gebäude: {
           type: "rich_text",
           rich_text: [{ plain_text: "Molkerei" }]
+        },
+        Typ: {
+          type: "select",
+          select: { name: "Produktionsgebäude" }
         }
       }
     },
@@ -46,13 +51,56 @@ const fallbackData = {
         Level: { type: "number", number: 33 },
         XP: { type: "number", number: 23 },
         MaxPreis: { type: "number", number: 190 },
-        Produktionszeit: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "12 min" }]
-        },
+        "Produktionszeit Minuten": { type: "number", number: 12 },
         Gebäude: {
           type: "rich_text",
           rich_text: [{ plain_text: "Bäckerei" }]
+        },
+        Typ: {
+          type: "select",
+          select: { name: "Produktionsgebäude" }
+        }
+      }
+    },
+    {
+      id: "weizen",
+      title: "Weizen",
+      properties: {
+        Level: { type: "number", number: 1 },
+        XP: { type: "number", number: 1 },
+        MaxPreis: { type: "number", number: 3.6 },
+        "Produktionszeit Minuten": { type: "number", number: 2 },
+        Typ: {
+          type: "select",
+          select: { name: "Feld" }
+        }
+      }
+    },
+    {
+      id: "milch",
+      title: "Milch",
+      properties: {
+        Level: { type: "number", number: 6 },
+        XP: { type: "number", number: 3 },
+        MaxPreis: { type: "number", number: 32 },
+        "Produktionszeit Minuten": { type: "number", number: 60 },
+        Typ: {
+          type: "select",
+          select: { name: "Tiergehege" }
+        }
+      }
+    },
+    {
+      id: "tomate",
+      title: "Tomate",
+      properties: {
+        Level: { type: "number", number: 30 },
+        XP: { type: "number", number: 8 },
+        MaxPreis: { type: "number", number: 43.2 },
+        "Produktionszeit Minuten": { type: "number", number: 360 },
+        Typ: {
+          type: "select",
+          select: { name: "Feld" }
         }
       }
     }
@@ -61,169 +109,138 @@ const fallbackData = {
     {
       id: "pizza-weizen",
       title: "Pizza – Weizen",
-      product: "Pizza",
-      ingredient: "Weizen",
-      amount: 2
+      properties: {
+        Produkt: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Pizza" }]
+        },
+        Zutat: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Weizen" }]
+        },
+        Menge: { type: "number", number: 2 }
+      }
     },
     {
       id: "pizza-kaese",
       title: "Pizza – Käse",
-      product: "Pizza",
-      ingredient: "Käse",
-      amount: 1
+      properties: {
+        Produkt: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Pizza" }]
+        },
+        Zutat: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Käse" }]
+        },
+        Menge: { type: "number", number: 1 }
+      }
     },
     {
       id: "pizza-tomate",
       title: "Pizza – Tomate",
-      product: "Pizza",
-      ingredient: "Tomate",
-      amount: 1
+      properties: {
+        Produkt: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Pizza" }]
+        },
+        Zutat: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Tomate" }]
+        },
+        Menge: { type: "number", number: 1 }
+      }
     },
     {
       id: "kaese-milch",
       title: "Käse – Milch",
-      product: "Käse",
-      ingredient: "Milch",
-      amount: 3
+      properties: {
+        Produkt: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Käse" }]
+        },
+        Zutat: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Milch" }]
+        },
+        Menge: { type: "number", number: 3 }
+      }
     },
     {
       id: "brot-weizen",
       title: "Brot – Weizen",
-      product: "Brot",
-      ingredient: "Weizen",
-      amount: 3
+      properties: {
+        Produkt: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Brot" }]
+        },
+        Zutat: {
+          type: "rich_text",
+          rich_text: [{ plain_text: "Weizen" }]
+        },
+        Menge: { type: "number", number: 3 }
+      }
     }
   ]
 };
 
-function readNumber(properties, names) {
-  for (const name of names) {
-    const property = properties?.[name];
-
-    if (!property) continue;
-
-    if (property.type === "number") return property.number ?? null;
-
-    if (property.type === "formula" && property.formula?.type === "number") {
-      return property.formula.number ?? null;
-    }
+const modes = [
+  {
+    id: "coins",
+    label: "Coins",
+    description: "Maximaler Verkaufspreis pro Zeit"
+  },
+  {
+    id: "xp",
+    label: "XP",
+    description: "Erfahrungspunkte pro Zeit"
+  },
+  {
+    id: "slots",
+    label: "Slotauslastung",
+    description: "Lange Produktion für Warteschlangen"
   }
+];
 
-  return null;
+function formatMinutes(minutes) {
+  if (!minutes) return "0 min";
+
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+
+  if (h && m) return `${h} h ${m} min`;
+  if (h) return `${h} h`;
+  return `${m} min`;
 }
 
-function readText(properties, names) {
-  for (const name of names) {
-    const property = properties?.[name];
-
-    if (!property) continue;
-
-    if (property.type === "rich_text") {
-      return property.rich_text?.map((part) => part.plain_text).join("") || "";
-    }
-
-    if (property.type === "select") {
-      return property.select?.name || "";
-    }
-
-    if (property.type === "status") {
-      return property.status?.name || "";
-    }
-
-    if (property.type === "formula" && property.formula?.type === "string") {
-      return property.formula.string || "";
-    }
+function ProductIcon({ item }) {
+  if (item?.iconUrl) {
+    return <img className="iconImage" src={item.iconUrl} alt="" />;
   }
 
-  return "";
+  const firstLetter = item?.name?.slice(0, 1) || "?";
+
+  return <span className="iconFallback">{firstLetter}</span>;
 }
 
-function normalizeProducts(data) {
-  return (data.mainDatabase || [])
-    .map((page) => ({
-      id: page.id,
-      name: page.title || "Ohne Name",
-      level: readNumber(page.properties, ["Level", "level"]) ?? 0,
-      xp: readNumber(page.properties, ["XP", "Erfahrungspunkte"]) ?? 0,
-      coins: readNumber(page.properties, ["MaxPreis", "Verkaufspreis", "Preis"]) ?? 0,
-      time: readText(page.properties, ["Produktionszeit", "Zeit"]) || "–",
-      building: readText(page.properties, ["Gebäude", "Produktionsgebäude"]) || "–"
-    }))
-    .filter((product) => product.name && product.name !== "Ohne Name")
-    .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
-}
-
-function normalizeRecipes(data) {
-  return (data.recipeDatabase || [])
-    .map((recipe) => ({
-      product: recipe.product || recipe.Produkt || "",
-      ingredient: recipe.ingredient || recipe.Zutat || "",
-      amount: Number(recipe.amount || recipe.Menge || 0)
-    }))
-    .filter((recipe) => recipe.product && recipe.ingredient && recipe.amount > 0);
-}
-
-function calculateIngredients({ productName, quantity, recipes, recursive }) {
-  const ingredients = new Map();
-  const intermediate = new Map();
-  const warnings = [];
-
-  function addToMap(map, name, amount) {
-    map.set(name, (map.get(name) || 0) + amount);
-  }
-
-  function resolve(name, amount, depth = 0) {
-    if (depth > 12) {
-      warnings.push(`Rekursion gestoppt bei ${name}.`);
-      addToMap(ingredients, name, amount);
-      return;
-    }
-
-    const recipeRows = recipes.filter((recipe) => recipe.product === name);
-
-    if (!recipeRows.length) {
-      addToMap(ingredients, name, amount);
-      return;
-    }
-
-    if (depth > 0) {
-      addToMap(intermediate, name, amount);
-    }
-
-    for (const row of recipeRows) {
-      const neededAmount = row.amount * amount;
-
-      if (recursive) {
-        resolve(row.ingredient, neededAmount, depth + 1);
-      } else {
-        addToMap(ingredients, row.ingredient, neededAmount);
-      }
-    }
-  }
-
-  resolve(productName, quantity);
-
-  return {
-    ingredients: Array.from(ingredients.entries()).map(([name, amount]) => ({
-      name,
-      amount
-    })),
-    intermediate: Array.from(intermediate.entries()).map(([name, amount]) => ({
-      name,
-      amount
-    })),
-    warnings
-  };
+function StepperButton({ children, onClick }) {
+  return (
+    <button className="stepperButton" type="button" onClick={onClick}>
+      {children}
+    </button>
+  );
 }
 
 export default function Home() {
-  const [data, setData] = useState(fallbackData);
+  const [rawData, setRawData] = useState(fallbackRawData);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState("Pizza");
-  const [quantity, setQuantity] = useState(1);
-  const [recursive, setRecursive] = useState(true);
-  const [levelFilter, setLevelFilter] = useState(999);
+  const [mode, setMode] = useState("coins");
+  const [level, setLevel] = useState(33);
+  const [hours, setHours] = useState(8);
+  const [resolveToBaseIngredients, setResolveToBaseIngredients] = useState(true);
+  const [allowedBuildings, setAllowedBuildings] = useState([]);
+  const [slotsByBuilding, setSlotsByBuilding] = useState({});
 
   useEffect(() => {
     async function loadData() {
@@ -238,7 +255,7 @@ export default function Home() {
           throw new Error(json.error || "API konnte nicht geladen werden.");
         }
 
-        setData(json);
+        setRawData(json);
       } catch (error) {
         setLoadError(
           "Demo-Daten aktiv. Echte Notion-Daten werden genutzt, sobald die API bereit ist."
@@ -251,45 +268,84 @@ export default function Home() {
     loadData();
   }, []);
 
-  const products = useMemo(() => normalizeProducts(data), [data]);
-  const recipes = useMemo(() => normalizeRecipes(data), [data]);
+  const normalized = useMemo(() => normalizeData(rawData), [rawData]);
 
-  const visibleProducts = useMemo(
-    () => products.filter((product) => product.level <= levelFilter),
-    [products, levelFilter]
+  const availableBuildings = useMemo(
+    () => getAvailableBuildings(normalized.products, level),
+    [normalized.products, level]
   );
 
-  const product = products.find((item) => item.name === selectedProduct) || products[0];
+  useEffect(() => {
+    setAllowedBuildings((current) => {
+      if (current.length > 0) {
+        return current.filter((building) =>
+          availableBuildings.some((item) => item.name === building)
+        );
+      }
+
+      return availableBuildings.map((building) => building.name);
+    });
+
+    setSlotsByBuilding((current) => {
+      const next = { ...current };
+
+      for (const building of availableBuildings) {
+        if (!next[building.name]) {
+          next[building.name] = 1;
+        }
+      }
+
+      return next;
+    });
+  }, [availableBuildings]);
+
+  const canShowAdvanced = level > 0 && hours > 0;
 
   const result = useMemo(() => {
-    if (!product) {
-      return {
-        ingredients: [],
-        intermediate: [],
-        warnings: ["Kein Produkt ausgewählt."]
-      };
-    }
-
-    return calculateIngredients({
-      productName: product.name,
-      quantity: Number(quantity) || 1,
-      recipes,
-      recursive
+    return calculateProductionPlan({
+      products: normalized.products,
+      recipes: normalized.recipes,
+      mode,
+      level,
+      hours,
+      allowedBuildings,
+      slotsByBuilding,
+      resolveToBaseIngredients
     });
-  }, [product, quantity, recipes, recursive]);
+  }, [
+    normalized.products,
+    normalized.recipes,
+    mode,
+    level,
+    hours,
+    allowedBuildings,
+    slotsByBuilding,
+    resolveToBaseIngredients
+  ]);
 
-  const totalXp = product ? product.xp * quantity : 0;
-  const totalCoins = product ? product.coins * quantity : 0;
+  function changeLevel(delta) {
+    setLevel((current) => Math.max(1, current + delta));
+  }
+
+  function toggleBuilding(buildingName) {
+    setAllowedBuildings((current) => {
+      if (current.includes(buildingName)) {
+        return current.filter((name) => name !== buildingName);
+      }
+
+      return [...current, buildingName];
+    });
+  }
 
   return (
     <main className="shell">
       <section className="hero">
         <div>
           <p className="eyebrow">Hay Day Calc.</p>
-          <h1>Produkt planen, Zutaten berechnen.</h1>
+          <h1>Produktionsplan für deine Farm.</h1>
           <p className="subtitle">
-            Wähle ein Produkt und eine Menge. Der Rechner zeigt dir Zutaten,
-            Zwischenprodukte und Gesamtwerte.
+            Wähle Modus, Level, Zeitfenster und Gebäude. Der Rechner erstellt
+            eine Produktionsliste und summiert die benötigten Zutaten.
           </p>
         </div>
 
@@ -300,128 +356,228 @@ export default function Home() {
             <small>
               {loadError ||
                 `Datenstand: ${
-                  data.syncedAt ? new Date(data.syncedAt).toLocaleString("de-DE") : "gerade geladen"
+                  rawData.syncedAt
+                    ? new Date(rawData.syncedAt).toLocaleString("de-DE")
+                    : "gerade geladen"
                 }`}
             </small>
           </div>
         </div>
       </section>
 
-      <section className="grid">
-        <div className="panel controls">
-          <h2>Einstellungen</h2>
+      <section className="layout">
+        <aside className="settings">
+          <details open className="panel">
+            <summary>Grunddaten</summary>
 
-          <label>
-            Produkt
-            <select
-              value={product?.name || ""}
-              onChange={(event) => setSelectedProduct(event.target.value)}
-            >
-              {visibleProducts.map((item) => (
-                <option key={item.id} value={item.name}>
-                  {item.name}
-                </option>
+            <div className="modeGrid">
+              {modes.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={mode === item.id ? "modeButton active" : "modeButton"}
+                  onClick={() => setMode(item.id)}
+                >
+                  <strong>{item.label}</strong>
+                  <span>{item.description}</span>
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
 
-          <label>
-            Menge
-            <input
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(event) => setQuantity(Number(event.target.value))}
-            />
-          </label>
+            <label className="field">
+              <span>Farm-Level</span>
+              <div className="levelControl">
+                <input
+                  type="number"
+                  min="1"
+                  value={level}
+                  onChange={(event) => setLevel(Math.max(1, Number(event.target.value)))}
+                />
+                <div className="stepper">
+                  <StepperButton onClick={() => changeLevel(-10)}>-10</StepperButton>
+                  <StepperButton onClick={() => changeLevel(-5)}>-5</StepperButton>
+                  <StepperButton onClick={() => changeLevel(-1)}>-1</StepperButton>
+                  <StepperButton onClick={() => changeLevel(1)}>+1</StepperButton>
+                  <StepperButton onClick={() => changeLevel(5)}>+5</StepperButton>
+                  <StepperButton onClick={() => changeLevel(10)}>+10</StepperButton>
+                </div>
+              </div>
+            </label>
 
-          <label>
-            Maximales Level
-            <input
-              type="number"
-              min="1"
-              value={levelFilter}
-              onChange={(event) => setLevelFilter(Number(event.target.value))}
-            />
-          </label>
+            <label className="field">
+              <span>Produktionsdauer: {hours} h</span>
+              <input
+                type="range"
+                min="1"
+                max="48"
+                step="1"
+                value={hours}
+                onChange={(event) => setHours(Number(event.target.value))}
+              />
+            </label>
+          </details>
 
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={recursive}
-              onChange={(event) => setRecursive(event.target.checked)}
-            />
-            Zwischenprodukte auf Grundzutaten auflösen
-          </label>
-        </div>
+          <details open={canShowAdvanced} className={canShowAdvanced ? "panel" : "panel disabled"}>
+            <summary>Zusätzliche Einstellungen</summary>
 
-        <div className="panel productCard">
-          <h2>{product?.name || "Kein Produkt"}</h2>
-          <div className="stats">
-            <span>
-              <strong>{product?.level ?? "–"}</strong>
-              Level
-            </span>
-            <span>
-              <strong>{product?.time ?? "–"}</strong>
-              Zeit
-            </span>
-            <span>
-              <strong>{product?.building ?? "–"}</strong>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={resolveToBaseIngredients}
+                onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
+              />
+              Bis auf Grundzutaten zurückrechnen
+            </label>
+
+            <div className="buildingList">
+              {availableBuildings.map((building) => {
+                const isAllowed = allowedBuildings.includes(building.name);
+
+                return (
+                  <div key={building.name} className={isAllowed ? "buildingCard active" : "buildingCard"}>
+                    <button type="button" onClick={() => toggleBuilding(building.name)}>
+                      <span className="iconFallback small">
+                        {building.name.slice(0, 1)}
+                      </span>
+                      <span>
+                        <strong>{building.name}</strong>
+                        <small>ab Level {building.level}</small>
+                      </span>
+                    </button>
+
+                    {isAllowed && (
+                      <label>
+                        Slots: {slotsByBuilding[building.name] || 1}
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          step="1"
+                          value={slotsByBuilding[building.name] || 1}
+                          onChange={(event) =>
+                            setSlotsByBuilding((current) => ({
+                              ...current,
+                              [building.name]: Number(event.target.value)
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        </aside>
+
+        <section className="output">
+          <div className="summaryGrid">
+            <div className="summaryCard">
+              <strong>{result.totals.products}</strong>
+              Produkte
+            </div>
+            <div className="summaryCard">
+              <strong>{Math.round(result.totals.coins)}</strong>
+              Coins
+            </div>
+            <div className="summaryCard">
+              <strong>{Math.round(result.totals.xp)}</strong>
+              XP
+            </div>
+            <div className="summaryCard">
+              <strong>{allowedBuildings.length}</strong>
               Gebäude
-            </span>
-            <span>
-              <strong>{totalXp}</strong>
-              XP gesamt
-            </span>
-            <span>
-              <strong>{totalCoins}</strong>
-              Coins gesamt
-            </span>
+            </div>
           </div>
-        </div>
 
-        <div className="panel result">
-          <h2>Benötigte Zutaten</h2>
+          <section className="panel">
+            <h2>Produktionsliste</h2>
 
-          {result.ingredients.length ? (
-            <ul className="itemList">
-              {result.ingredients.map((item) => (
-                <li key={item.name}>
-                  <span>{item.name}</span>
-                  <strong>{item.amount}×</strong>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty">Keine Zutaten gefunden.</p>
-          )}
-        </div>
+            {result.productionByBuilding.length ? (
+              <div className="productionGroups">
+                {result.productionByBuilding.map((group) => (
+                  <div key={group.building} className="productionGroup">
+                    <h3>{group.building}</h3>
 
-        <div className="panel result">
-          <h2>Zwischenprodukte</h2>
+                    <ul className="itemList">
+                      {group.items.map((entry) => (
+                        <li key={`${entry.building}-${entry.product.key}`}>
+                          <ProductIcon item={entry.product} />
+                          <span>
+                            <strong>{entry.amount}× {entry.product.name}</strong>
+                            <small>
+                              Level {entry.product.level} · {formatMinutes(entry.product.timeMin)} ·{" "}
+                              {Math.round(entry.totalCoins)} Coins · {Math.round(entry.totalXp)} XP
+                            </small>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="empty">Keine passenden Produkte gefunden.</p>
+            )}
+          </section>
 
-          {result.intermediate.length ? (
-            <ul className="itemList muted">
-              {result.intermediate.map((item) => (
-                <li key={item.name}>
-                  <span>{item.name}</span>
-                  <strong>{item.amount}×</strong>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty">Keine Zwischenprodukte aufgelöst.</p>
+          <section className="panel">
+            <h2>Zutatenliste</h2>
+
+            {result.ingredientGroups.length ? (
+              <div className="ingredientGroups">
+                {result.ingredientGroups.map((group) => (
+                  <div key={group.title} className="ingredientGroup">
+                    <h3>{group.title}</h3>
+
+                    <ul className="itemList compact">
+                      {group.items.map((item) => (
+                        <li key={item.key}>
+                          <ProductIcon item={item} />
+                          <span>
+                            <strong>{item.amount}× {item.name}</strong>
+                            <small>
+                              {item.level ? `Level ${item.level}` : "ohne Level"}
+                              {item.building ? ` · ${item.building}` : ""}
+                            </small>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="empty">Keine Zutaten gefunden.</p>
+            )}
+          </section>
+
+          {result.intermediateProducts.length > 0 && (
+            <section className="panel">
+              <h2>Zwischenprodukte</h2>
+
+              <ul className="itemList compact">
+                {result.intermediateProducts.map((item) => (
+                  <li key={item.key}>
+                    <ProductIcon item={item} />
+                    <span>
+                      <strong>{item.amount}× {item.name}</strong>
+                      <small>{item.building || "Zwischenprodukt"}</small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {result.warnings.length > 0 && (
-            <div className="warnings">
+            <section className="warnings">
               {result.warnings.map((warning) => (
                 <p key={warning}>{warning}</p>
               ))}
-            </div>
+            </section>
           )}
-        </div>
+        </section>
       </section>
     </main>
   );
