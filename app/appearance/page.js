@@ -4,19 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import "./appearance.css";
 
 const colorPalettes = [
-  { id: "hay", label: "Hay", colors: ["#f7f3e8", "#fffaf0", "#46a171", "#2783de", "#d5803b"] },
-  { id: "mono", label: "Mono", colors: ["#f4f4f4", "#cfcfcf", "#8a8a8a", "#3f3f3f", "#111111"] },
-  { id: "berry", label: "Berry", colors: ["#f8d8f1", "#d98bd3", "#bf55bf", "#7b1f73", "#4b124a"] },
-  { id: "ocean", label: "Ocean", colors: ["#d9f4ff", "#84d4ed", "#18a0ce", "#0d5b78", "#0a3445"] },
-  { id: "forest", label: "Forest", colors: ["#d8f3d0", "#8bd373", "#46a171", "#2d7a20", "#163f14"] },
-  { id: "sunset", label: "Sunset", colors: ["#fff0e3", "#f7bd99", "#ed6d2f", "#c64e12", "#7f2e0b"] }
+  { id: "hay", label: "Hay", colors: ["#f7f3e8", "#fffaf0", "#46a171", "#2783de", "#d5803b", "#e9c46a"] },
+  { id: "mono", label: "Mono", colors: ["#f4f4f4", "#cfcfcf", "#8a8a8a", "#3f3f3f", "#111111", "#ffffff"] },
+  { id: "berry", label: "Berry", colors: ["#f8d8f1", "#d98bd3", "#bf55bf", "#7b1f73", "#4b124a", "#f2b5d4"] },
+  { id: "ocean", label: "Ocean", colors: ["#d9f4ff", "#84d4ed", "#18a0ce", "#0d5b78", "#0a3445", "#54d6c6"] },
+  { id: "forest", label: "Forest", colors: ["#d8f3d0", "#8bd373", "#46a171", "#2d7a20", "#163f14", "#b6d957"] },
+  { id: "sunset", label: "Sunset", colors: ["#fff0e3", "#f7bd99", "#ed6d2f", "#c64e12", "#7f2e0b", "#ffd166"] }
 ];
 
 const paletteById = new Map(colorPalettes.map((palette) => [palette.id, palette]));
 
 const defaultAppearance = {
   theme: "system",
-  compactMode: true,
   cardScale: 100,
   textScale: 100,
   iconScale: 100,
@@ -64,6 +63,7 @@ function applyAppearance(appearance, effectiveTheme) {
   document.documentElement.style.setProperty("--green", palette.colors[2]);
   document.documentElement.style.setProperty("--blue", palette.colors[3]);
   document.documentElement.style.setProperty("--orange", palette.colors[4]);
+  document.documentElement.style.setProperty("--accent-extra", palette.colors[5]);
   document.documentElement.style.setProperty("--card-scale", String(appearance.cardScale / 100));
   document.documentElement.style.setProperty("--text-scale", String(appearance.textScale / 100));
   document.documentElement.style.setProperty("--icon-scale", String(appearance.iconScale / 100));
@@ -122,27 +122,91 @@ export default function AppearanceSettings() {
         <div className="panelStaticHeader">Optische Einstellungen</div>
 
         <div className="appearanceBody">
-          <section className="appearanceSection">
-            <h2>Theme</h2>
-            <div className="appearanceSegment">
-              {[
-                { id: "light", label: "Light" },
-                { id: "dark", label: "Dark" },
-                { id: "system", label: "System" }
-              ].map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  className={appearance.theme === theme.id ? "active" : ""}
-                  onClick={() => updateValue("theme", theme.id)}
-                >
-                  {theme.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          <div className="appearanceControls">
+            <section className="appearanceSection themeSection">
+              <h2>Theme</h2>
+              <div className="appearanceSegment">
+                {[
+                  { id: "light", label: "Light" },
+                  { id: "dark", label: "Dark" },
+                  { id: "system", label: "System" }
+                ].map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    className={appearance.theme === theme.id ? "active" : ""}
+                    onClick={() => updateValue("theme", theme.id)}
+                  >
+                    {theme.label}
+                  </button>
+                ))}
+              </div>
+            </section>
 
-          <section className="appearanceSection">
+            <section className="appearanceSection">
+              <h2>Darstellung</h2>
+
+              <label className="field compactField">
+                <span>Kachelgröße: {appearance.cardScale}%</span>
+                <input
+                  type="range"
+                  min="85"
+                  max="120"
+                  step="5"
+                  value={appearance.cardScale}
+                  onChange={(event) => updateValue("cardScale", Number(event.target.value))}
+                />
+              </label>
+
+              <label className="field compactField">
+                <span>Textgröße: {appearance.textScale}%</span>
+                <input
+                  type="range"
+                  min="85"
+                  max="125"
+                  step="5"
+                  value={appearance.textScale}
+                  onChange={(event) => updateValue("textScale", Number(event.target.value))}
+                />
+              </label>
+
+              <label className="field compactField">
+                <span>Icongröße: {appearance.iconScale}%</span>
+                <input
+                  type="range"
+                  min="80"
+                  max="130"
+                  step="5"
+                  value={appearance.iconScale}
+                  onChange={(event) => updateValue("iconScale", Number(event.target.value))}
+                />
+              </label>
+            </section>
+
+            <section className="appearanceSection">
+              <h2>Kacheln</h2>
+
+              <label className="checkbox compactCheckbox singleCheckbox">
+                <input
+                  type="checkbox"
+                  checked={appearance.showMeta}
+                  onChange={(event) => updateValue("showMeta", event.target.checked)}
+                />
+                Zusatzinfos anzeigen
+              </label>
+
+              <label className="checkbox compactCheckbox singleCheckbox">
+                <input
+                  type="checkbox"
+                  checked={appearance.iconsOnly}
+                  onChange={(event) => updateValue("iconsOnly", event.target.checked)}
+                />
+                Nur Icons anzeigen
+              </label>
+            </section>
+          </div>
+
+          <section className="appearanceSection paletteSection">
             <h2>Design-Farbkombination</h2>
             <div className="paletteGrid">
               {colorPalettes.map((palette) => (
@@ -162,77 +226,6 @@ export default function AppearanceSettings() {
                 </button>
               ))}
             </div>
-          </section>
-
-          <section className="appearanceSection">
-            <h2>Darstellung</h2>
-
-            <label className="field compactField">
-              <span>Kachelgröße: {appearance.cardScale}%</span>
-              <input
-                type="range"
-                min="85"
-                max="120"
-                step="5"
-                value={appearance.cardScale}
-                onChange={(event) => updateValue("cardScale", Number(event.target.value))}
-              />
-            </label>
-
-            <label className="field compactField">
-              <span>Textgröße: {appearance.textScale}%</span>
-              <input
-                type="range"
-                min="85"
-                max="125"
-                step="5"
-                value={appearance.textScale}
-                onChange={(event) => updateValue("textScale", Number(event.target.value))}
-              />
-            </label>
-
-            <label className="field compactField">
-              <span>Icongröße: {appearance.iconScale}%</span>
-              <input
-                type="range"
-                min="80"
-                max="130"
-                step="5"
-                value={appearance.iconScale}
-                onChange={(event) => updateValue("iconScale", Number(event.target.value))}
-              />
-            </label>
-
-            <label className="checkbox compactCheckbox singleCheckbox">
-              <input
-                type="checkbox"
-                checked={appearance.compactMode}
-                onChange={(event) => updateValue("compactMode", event.target.checked)}
-              />
-              Kompakter Modus
-            </label>
-          </section>
-
-          <section className="appearanceSection">
-            <h2>Kacheln</h2>
-
-            <label className="checkbox compactCheckbox singleCheckbox">
-              <input
-                type="checkbox"
-                checked={appearance.showMeta}
-                onChange={(event) => updateValue("showMeta", event.target.checked)}
-              />
-              Zusatzinfos auf Kacheln anzeigen
-            </label>
-
-            <label className="checkbox compactCheckbox singleCheckbox">
-              <input
-                type="checkbox"
-                checked={appearance.iconsOnly}
-                onChange={(event) => updateValue("iconsOnly", event.target.checked)}
-              />
-              Nur Icons anzeigen
-            </label>
           </section>
 
           <div className={appearance.iconsOnly ? "appearancePreview iconsOnly" : "appearancePreview"}>
