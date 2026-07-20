@@ -37,13 +37,47 @@ function formatMinutes(minutes) {
   return `${m} min`;
 }
 
-function ProductIcon({ item }) {
+function ProductIcon({ item, size = "normal" }) {
+  const className = size === "large" ? "visualIcon large" : "visualIcon";
+
   if (item?.iconUrl) {
-    return <img className="iconImage" src={item.iconUrl} alt="" />;
+    return <img className={className} src={item.iconUrl} alt="" />;
   }
 
   const firstLetter = item?.name?.slice(0, 1) || "?";
-  return <span className="iconFallback">{firstLetter}</span>;
+  return <span className={`${className} fallback`}>{firstLetter}</span>;
+}
+
+function BuildingIcon({ item }) {
+  if (item?.iconUrl) {
+    return <img className="buildingVisualIcon" src={item.iconUrl} alt="" />;
+  }
+
+  const firstLetter = item?.name?.slice(0, 1) || "?";
+  return <span className="buildingVisualIcon fallback">{firstLetter}</span>;
+}
+
+function mergeBuildingData(availableBuildings, normalizedBuildings) {
+  const buildingByName = new Map();
+
+  for (const building of normalizedBuildings || []) {
+    if (!building?.name) continue;
+    buildingByName.set(building.name, building);
+  }
+
+  return availableBuildings.map((building) => {
+    const fullBuilding = buildingByName.get(building.name);
+
+    return {
+      ...building,
+      iconUrl: building.iconUrl || fullBuilding?.iconUrl || "",
+      slots: fullBuilding?.slots || building.slots || 0,
+      level: Math.min(
+        building.level || fullBuilding?.level || 0,
+        fullBuilding?.level || building.level || 0
+      )
+    };
+  });
 }
 
 export default function Home() {
@@ -94,19 +128,46 @@ export default function Home() {
     loadData();
   }, []);
 
-  const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
-
   const normalized = useMemo(() => normalizeData(rawData), [rawData]);
 
-  const availableBuildings = useMemo(
+  const baseSettingsComplete =
+    Boolean(mode) &&
+    level >= 1 &&
+    hours >= 1 &&
+    globalSlots >= 1;
+
+  const availableBuildingsFromProducts = useMemo(
     () => getAvailableBuildings(normalized.products, level || 0),
     [normalized.products, level]
+  );
+
+  const availableBuildings = useMemo(
+    () => mergeBuildingData(availableBuildingsFromProducts, normalized.buildings),
+    [availableBuildingsFromProducts, normalized.buildings]
   );
 
   const availableBuildingNames = useMemo(
     () => availableBuildings.map((building) => building.name),
     [availableBuildings]
   );
+
+  const defaultSlotsByBuilding = useMemo(() => {
+    const map = {};
+
+    for (const building of normalized.buildings || []) {
+      if (building.name && building.slots) {
+        map[building.name] = building.slots;
+      }
+    }
+
+    for (const product of normalized.products || []) {
+      if (product.building && product.buildingSlots) {
+        map[product.building] = product.buildingSlots;
+      }
+    }
+
+    return map;
+  }, [normalized.buildings, normalized.products]);
 
   useEffect(() => {
     if (!baseSettingsComplete) {
@@ -163,6 +224,7 @@ export default function Home() {
       hours: calculationSettings.hours,
       globalSlots: calculationSettings.globalSlots,
       slotsByBuilding: calculationSettings.slotsByBuilding,
+      defaultSlotsByBuilding: calculationSettings.defaultSlotsByBuilding,
       allowedBuildings: calculationSettings.allowedBuildings,
       intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced,
       excludedIngredientNames: calculationSettings.excludedIngredientNames
@@ -170,7 +232,7 @@ export default function Home() {
   }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
 
   function getBuildingSlots(buildingName) {
-    return slotsByBuilding[buildingName] ?? globalSlots;
+    return slotsByBuilding[buildingName] ?? defaultSlotsByBuilding[buildingName] ?? globalSlots;
   }
 
   function toggleBuilding(buildingName) {
@@ -248,6 +310,7 @@ export default function Home() {
       hours,
       globalSlots,
       slotsByBuilding,
+      defaultSlotsByBuilding,
       allowedBuildings,
       intermediateMustBeProduced,
       excludedIngredientNames
@@ -332,7 +395,7 @@ export default function Home() {
               </label>
 
               <label className="field compactField">
-                <span>Standard-Slots: {globalSlots}</span>
+                <span>Fallback-Slots: {globalSlots}</span>
                 <input
                   type="range"
                   min="1"
@@ -464,36 +527,32 @@ export default function Home() {
                   <span>{allowedBuildings.length}/{availableBuildings.length} aktiv</span>
                 </div>
 
-                <div className="buildingChipGrid withSlotControls">
+                <div className="buildingVisualGrid withSlotControls">
                   {availableBuildings.map((building) => {
                     const isAllowed = allowedBuildings.includes(building.name);
                     const buildingSlots = getBuildingSlots(building.name);
                     const hasCustomSlots = slotsByBuilding[building.name] !== undefined;
+                    const hasDatabaseSlots = defaultSlotsByBuilding[building.name] !== undefined;
 
                     return (
                       <div
                         key={building.name}
-                        className={
-                          isAllowed
-                            ? "buildingChipWrap active"
-                            : "buildingChipWrap"
-                        }
+                        className={isAllowed ? "buildingVisualCard active" : "buildingVisualCard"}
                       >
                         <button
                           type="button"
-                          className={isAllowed ? "buildingChip active" : "buildingChip"}
+                          className="buildingVisualButton"
                           onClick={() => toggleBuilding(building.name)}
                           title={`ab Level ${building.level}`}
                         >
-                          <span>{building.name}</span>
-                          <small>
+                          <BuildingIcon item={building} />
+                          <span className="buildingVisualName">{building.name}</span>
+                          <span className="buildingVisualMeta">
                             Lv. {building.level}
                             <br />
-                            <em>
-                              {buildingSlots} Slot{buildingSlots === 1 ? "" : "s"}
-                              {hasCustomSlots ? "" : " std."}
-                            </em>
-                          </small>
+                            {buildingSlots} Slot{buildingSlots === 1 ? "" : "s"}
+                            {hasCustomSlots ? " individuell" : hasDatabaseSlots ? " DB" : " fallback"}
+                          </span>
                         </button>
 
                         <div className="buildingSlotHover">
@@ -556,32 +615,35 @@ export default function Home() {
               <summary>Produktionsliste</summary>
 
               {result.productionByBuilding.length ? (
-                <div className="compactProductionGrid">
+                <div className="visualProductionGrid">
                   {result.productionByBuilding.map((group) => (
-                    <div key={group.building} className="compactGroup">
+                    <div key={group.building} className="visualGroup">
                       <h3>{group.building}</h3>
 
-                      <ul className="itemList compactItems">
+                      <div className="visualItemGrid">
                         {group.items.map((entry) => (
-                          <li
+                          <article
                             key={`${entry.building}-${entry.product.key}-${entry.role}`}
-                            className={entry.role === "intermediate" ? "intermediateItem" : ""}
+                            className={
+                              entry.role === "intermediate"
+                                ? "visualItem intermediateItem"
+                                : "visualItem"
+                            }
                           >
-                            <ProductIcon item={entry.product} />
-                            <span>
-                              <strong>
-                                {entry.amount}× {entry.product.name}
-                              </strong>
-                              <small>
-                                {entry.role === "intermediate" ? "Zwischenprodukt · " : ""}
-                                Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)} ·{" "}
-                                {entry.slotsUsed}/{entry.slots} Slots ·{" "}
-                                {Math.round(entry.totalCoins)} Coins · {Math.round(entry.totalXp)} XP
-                              </small>
-                            </span>
-                          </li>
+                            <ProductIcon item={entry.product} size="large" />
+                            <strong>{entry.amount}×</strong>
+                            <span>{entry.product.name}</span>
+                            <small>
+                              {entry.role === "intermediate" ? "Zwischenprodukt · " : ""}
+                              Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)}
+                              <br />
+                              {entry.slotsUsed}/{entry.slots} Slots ·{" "}
+                              {Math.round(entry.totalCoins)} Coins ·{" "}
+                              {Math.round(entry.totalXp)} XP
+                            </small>
+                          </article>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -596,27 +658,24 @@ export default function Home() {
               <summary>Zutatenliste</summary>
 
               {result.ingredientGroups.length ? (
-                <div className="compactProductionGrid">
+                <div className="visualProductionGrid">
                   {result.ingredientGroups.map((group) => (
-                    <div key={group.title} className="compactGroup">
+                    <div key={group.title} className="visualGroup">
                       <h3>{group.title}</h3>
 
-                      <ul className="itemList compactItems">
+                      <div className="visualItemGrid">
                         {group.items.map((item) => (
-                          <li key={item.key}>
-                            <ProductIcon item={item} />
-                            <span>
-                              <strong>
-                                {item.amount}× {item.name}
-                              </strong>
-                              <small>
-                                {item.level ? `Lv. ${item.level}` : "ohne Level"}
-                                {item.building ? ` · ${item.building}` : ""}
-                              </small>
-                            </span>
-                          </li>
+                          <article key={item.key} className="visualItem ingredientItem">
+                            <ProductIcon item={item} size="large" />
+                            <strong>{item.amount}×</strong>
+                            <span>{item.name}</span>
+                            <small>
+                              {item.level ? `Lv. ${item.level}` : "ohne Level"}
+                              {item.building ? ` · ${item.building}` : ""}
+                            </small>
+                          </article>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -629,19 +688,16 @@ export default function Home() {
               <details className="panel compactPanel">
                 <summary>Zwischenprodukte</summary>
 
-                <ul className="itemList compactItems">
+                <div className="visualItemGrid standalone">
                   {result.intermediateProducts.map((item) => (
-                    <li key={item.key}>
-                      <ProductIcon item={item} />
-                      <span>
-                        <strong>
-                          {item.amount}× {item.name}
-                        </strong>
-                        <small>{item.building || "Zwischenprodukt"}</small>
-                      </span>
-                    </li>
+                    <article key={item.key} className="visualItem intermediateItem">
+                      <ProductIcon item={item} size="large" />
+                      <strong>{item.amount}×</strong>
+                      <span>{item.name}</span>
+                      <small>{item.building || "Zwischenprodukt"}</small>
+                    </article>
                   ))}
-                </ul>
+                </div>
               </details>
             )}
 
