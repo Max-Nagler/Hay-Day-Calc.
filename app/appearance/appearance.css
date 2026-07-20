@@ -13,17 +13,25 @@
 
 .appearanceBody {
   display: grid;
-  gap: 12px;
-  margin: 14px 16px 16px;
+  gap: 10px;
+  margin: 12px 14px 14px;
   transform: scale(var(--appearance-page-zoom, 1));
   transform-origin: top left;
   width: calc(100% / var(--appearance-page-zoom, 1));
 }
 
+.appearanceToolbar {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.45fr) minmax(280px, 1.05fr) minmax(280px, 1.05fr) minmax(220px, 0.95fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
 .appearanceSection {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: color-mix(in srgb, var(--surface-strong) 78%, transparent);
@@ -32,19 +40,14 @@
 .appearanceSection h2 {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.themeSection {
-  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
-  align-items: end;
-}
-
-.themeSection h2 {
-  grid-column: 1 / -1;
+.themeTileSection {
+  align-content: start;
 }
 
 .appearanceSegment {
@@ -59,12 +62,12 @@
 
 .appearanceSegment button,
 .appearanceActions button {
-  min-height: 34px;
+  min-height: 30px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 850;
 }
 
@@ -81,14 +84,14 @@
 }
 
 .tileSettingsInline .singleCheckbox {
+  min-height: 32px;
   margin: 0;
+  padding: 7px 9px;
 }
 
-.appearanceMainGrid {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(220px, 1fr);
-  gap: 10px;
-  align-items: stretch;
+.appearanceSizingSection .field,
+.paletteSection .field {
+  margin-bottom: 0;
 }
 
 .paletteSection {
@@ -98,7 +101,7 @@
 .paletteSwatches {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  gap: 5px;
 }
 
 .paletteSwatches span {
@@ -108,14 +111,14 @@
 }
 
 .selectedPaletteSwatches {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .appearancePreview {
   display: grid;
   place-items: center;
   min-height: 100%;
-  padding: 16px;
+  padding: 12px;
   border: 1px dashed var(--border-warm);
   border-radius: 16px;
   background:
@@ -130,8 +133,14 @@
 }
 
 .appearancePreview .visualIcon {
-  width: calc(68px * var(--icon-scale, 1));
-  height: calc(68px * var(--icon-scale, 1));
+  width: calc(58px * var(--icon-scale, 1));
+  height: calc(58px * var(--icon-scale, 1));
+}
+
+.appearancePreview .visualItem {
+  flex-basis: 76px;
+  width: 76px;
+  min-height: 108px;
 }
 
 .appearancePreview .visualItem strong,
@@ -152,9 +161,9 @@
 }
 
 .appearanceAdvanced summary {
-  padding: 10px 12px;
+  padding: 9px 11px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -170,6 +179,7 @@
 }
 
 .appearanceActions button {
+  min-height: 34px;
   border-color: var(--border);
   background: var(--surface-strong);
   color: var(--text);
@@ -185,13 +195,18 @@
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-@media (max-width: 900px) {
-  .themeSection,
-  .appearanceMainGrid {
-    grid-template-columns: 1fr;
+@media (max-width: 1040px) {
+  .appearanceToolbar {
+    grid-template-columns: 1fr 1fr;
   }
 
   .appearancePreview {
-    min-height: 180px;
+    min-height: 170px;
+  }
+}
+
+@media (max-width: 720px) {
+  .appearanceToolbar {
+    grid-template-columns: 1fr;
   }
 }
