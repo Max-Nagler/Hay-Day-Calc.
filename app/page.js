@@ -297,8 +297,6 @@ export default function Home() {
     });
   }, [availableBuildingNames, userChangedBuildings]);
 
-  const canShowAdvanced = level > 0 && hours > 0;
-
   const result = useMemo(() => {
     return calculateProductionPlan({
       products: normalized.products,
@@ -380,8 +378,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="layout">
-        <aside className="settings">
+      <section className="settingsGrid">
+        <div className="settingsColumn">
           <details open className="panel">
             <summary>Grunddaten</summary>
 
@@ -447,7 +445,31 @@ export default function Home() {
             </label>
           </details>
 
-          <details open={canShowAdvanced} className={canShowAdvanced ? "panel" : "panel disabled"}>
+          <details className="panel">
+            <summary>Zusätzliche Einstellungen</summary>
+
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={resolveToBaseIngredients}
+                onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
+              />
+              Bis auf Grundzutaten zurückrechnen
+            </label>
+
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={assumeIntermediateStock}
+                onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
+              />
+              Zwischenprodukte sind bereits auf Lager
+            </label>
+          </details>
+        </div>
+
+        <div className="buildingsColumn">
+          <details className="panel">
             <summary>Produktionsgebäude</summary>
 
             <div className="buildingActions">
@@ -494,147 +516,125 @@ export default function Home() {
               })}
             </div>
           </details>
+        </div>
+      </section>
 
-          <details open className="panel">
-            <summary>Zusätzliche Einstellungen</summary>
+      <section className="summaryGrid belowSettings">
+        <div className="summaryCard">
+          <strong>{result.totals.products}</strong>
+          Produkte
+        </div>
+        <div className="summaryCard">
+          <strong>{Math.round(result.totals.coins)}</strong>
+          Coins
+        </div>
+        <div className="summaryCard">
+          <strong>{Math.round(result.totals.xp)}</strong>
+          XP
+        </div>
+        <div className="summaryCard">
+          <strong>{result.totals.buildings}</strong>
+          Gebäude
+        </div>
+      </section>
 
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={resolveToBaseIngredients}
-                onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
-              />
-              Bis auf Grundzutaten zurückrechnen
-            </label>
+      <section className="output belowSettings">
+        <details className="panel">
+          <summary>Produktionsliste</summary>
 
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={assumeIntermediateStock}
-                onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
-              />
-              Zwischenprodukte sind bereits auf Lager
-            </label>
-          </details>
-        </aside>
+          {result.productionByBuilding.length ? (
+            <div className="productionGroups">
+              {result.productionByBuilding.map((group) => (
+                <div key={group.building} className="productionGroup">
+                  <h3>{group.building}</h3>
 
-        <section className="output">
-          <div className="summaryGrid">
-            <div className="summaryCard">
-              <strong>{result.totals.products}</strong>
-              Produkte
-            </div>
-            <div className="summaryCard">
-              <strong>{Math.round(result.totals.coins)}</strong>
-              Coins
-            </div>
-            <div className="summaryCard">
-              <strong>{Math.round(result.totals.xp)}</strong>
-              XP
-            </div>
-            <div className="summaryCard">
-              <strong>{result.totals.buildings}</strong>
-              Gebäude
-            </div>
-          </div>
-
-          <section className="panel">
-            <h2>Produktionsliste</h2>
-
-            {result.productionByBuilding.length ? (
-              <div className="productionGroups">
-                {result.productionByBuilding.map((group) => (
-                  <div key={group.building} className="productionGroup">
-                    <h3>{group.building}</h3>
-
-                    <ul className="itemList">
-                      {group.items.map((entry) => (
-                        <li key={`${entry.building}-${entry.product.key}`}>
-                          <ProductIcon item={entry.product} />
-                          <span>
-                            <strong>
-                              {entry.amount}× {entry.product.name}
-                            </strong>
-                            <small>
-                              Level {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)} inkl.
-                              Vorprodukte · {entry.slots} Slots · {Math.round(entry.totalCoins)} Coins ·{" "}
-                              {Math.round(entry.totalXp)} XP
-                            </small>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="empty">
-                Keine passenden Produkte gefunden. Prüfe Level, Gebäudeauswahl oder Datenbankdaten.
-              </p>
-            )}
-          </section>
-
-          <section className="panel">
-            <h2>Zutatenliste</h2>
-
-            {result.ingredientGroups.length ? (
-              <div className="ingredientGroups">
-                {result.ingredientGroups.map((group) => (
-                  <div key={group.title} className="ingredientGroup">
-                    <h3>{group.title}</h3>
-
-                    <ul className="itemList compact">
-                      {group.items.map((item) => (
-                        <li key={item.key}>
-                          <ProductIcon item={item} />
-                          <span>
-                            <strong>
-                              {item.amount}× {item.name}
-                            </strong>
-                            <small>
-                              {item.level ? `Level ${item.level}` : "ohne Level"}
-                              {item.building ? ` · ${item.building}` : ""}
-                            </small>
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="empty">Keine Zutaten gefunden.</p>
-            )}
-          </section>
-
-          {result.intermediateProducts.length > 0 && (
-            <section className="panel">
-              <h2>Zwischenprodukte</h2>
-
-              <ul className="itemList compact">
-                {result.intermediateProducts.map((item) => (
-                  <li key={item.key}>
-                    <ProductIcon item={item} />
-                    <span>
-                      <strong>
-                        {item.amount}× {item.name}
-                      </strong>
-                      <small>{item.building || "Zwischenprodukt"}</small>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {result.warnings.length > 0 && (
-            <section className="warnings">
-              {result.warnings.map((warning) => (
-                <p key={warning}>{warning}</p>
+                  <ul className="itemList">
+                    {group.items.map((entry) => (
+                      <li key={`${entry.building}-${entry.product.key}`}>
+                        <ProductIcon item={entry.product} />
+                        <span>
+                          <strong>
+                            {entry.amount}× {entry.product.name}
+                          </strong>
+                          <small>
+                            Level {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)} inkl.
+                            Vorprodukte · {entry.slots} Slots · {Math.round(entry.totalCoins)} Coins ·{" "}
+                            {Math.round(entry.totalXp)} XP
+                          </small>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </section>
+            </div>
+          ) : (
+            <p className="empty">
+              Keine passenden Produkte gefunden. Prüfe Level, Gebäudeauswahl oder Datenbankdaten.
+            </p>
           )}
-        </section>
+        </details>
+
+        <details className="panel">
+          <summary>Zutatenliste</summary>
+
+          {result.ingredientGroups.length ? (
+            <div className="ingredientGroups">
+              {result.ingredientGroups.map((group) => (
+                <div key={group.title} className="ingredientGroup">
+                  <h3>{group.title}</h3>
+
+                  <ul className="itemList compact">
+                    {group.items.map((item) => (
+                      <li key={item.key}>
+                        <ProductIcon item={item} />
+                        <span>
+                          <strong>
+                            {item.amount}× {item.name}
+                          </strong>
+                          <small>
+                            {item.level ? `Level ${item.level}` : "ohne Level"}
+                            {item.building ? ` · ${item.building}` : ""}
+                          </small>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="empty">Keine Zutaten gefunden.</p>
+          )}
+        </details>
+
+        {result.intermediateProducts.length > 0 && (
+          <details className="panel">
+            <summary>Zwischenprodukte</summary>
+
+            <ul className="itemList compact">
+              {result.intermediateProducts.map((item) => (
+                <li key={item.key}>
+                  <ProductIcon item={item} />
+                  <span>
+                    <strong>
+                      {item.amount}× {item.name}
+                    </strong>
+                    <small>{item.building || "Zwischenprodukt"}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+        {result.warnings.length > 0 && (
+          <section className="warnings">
+            {result.warnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </section>
+        )}
       </section>
     </main>
   );
