@@ -17,6 +17,56 @@ const modes = [
   { id: "slots", label: "Slots" }
 ];
 
+const defaultAppearance = {
+  theme: "system",
+  compactMode: true,
+  cardScale: 100,
+  textScale: 100,
+  iconScale: 100,
+  cornerRadius: 16,
+  accent: "#46a171",
+  panelOpacity: 94,
+  showMeta: true,
+  iconsOnly: false
+};
+
+function getEffectiveTheme(theme) {
+  if (theme !== "system") return theme;
+
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function readStoredAppearance() {
+  if (typeof window === "undefined") return defaultAppearance;
+
+  try {
+    const stored = JSON.parse(localStorage.getItem("hayDayCalcAppearance") || "{}");
+    return {
+      ...defaultAppearance,
+      ...stored
+    };
+  } catch {
+    return defaultAppearance;
+  }
+}
+
+function applyAppearance(appearance) {
+  if (typeof document === "undefined") return;
+
+  const effectiveTheme = getEffectiveTheme(appearance.theme);
+
+  document.documentElement.dataset.theme = effectiveTheme;
+  document.documentElement.dataset.iconsOnly = appearance.iconsOnly ? "true" : "false";
+  document.documentElement.dataset.showMeta = appearance.showMeta ? "true" : "false";
+  document.documentElement.style.setProperty("--green", appearance.accent);
+  document.documentElement.style.setProperty("--card-scale", String(appearance.cardScale / 100));
+  document.documentElement.style.setProperty("--text-scale", String(appearance.textScale / 100));
+  document.documentElement.style.setProperty("--icon-scale", String(appearance.iconScale / 100));
+  document.documentElement.style.setProperty("--panel-radius", `${appearance.cornerRadius}px`);
+  document.documentElement.style.setProperty("--panel-opacity", String(appearance.panelOpacity / 100));
+}
+
 const oreNames = ["Silbererz", "Golderz", "Platinerz", "Kohle", "Eisenerz"];
 
 const specialExcludedNames = ["Honig", "Bienenwachs", "Fischfilet", "Hummerschwanz", "Entenfeder"];
@@ -185,6 +235,35 @@ export default function Home() {
   const [profiles, setProfiles] = useState([]);
   const [profileName, setProfileName] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [appearance, setAppearance] = useState(defaultAppearance);
+
+  useEffect(() => {
+    const storedAppearance = readStoredAppearance();
+    setAppearance(storedAppearance);
+    applyAppearance(storedAppearance);
+
+    function syncAppearance() {
+      const nextAppearance = readStoredAppearance();
+      setAppearance(nextAppearance);
+      applyAppearance(nextAppearance);
+    }
+
+    function handleStorage(event) {
+      if (event.key !== "hayDayCalcAppearance") return;
+      syncAppearance();
+    }
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("hayDayCalcAppearanceChange", syncAppearance);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("hayDayCalcAppearanceChange", syncAppearance);
+    };
+  }, []);
+
+  useEffect(() => {
+    applyAppearance(appearance);
+  }, [appearance]);
 
   useEffect(() => {
     try {
@@ -620,7 +699,13 @@ export default function Home() {
   }
 
   return (
-    <main className="shell compactShell">
+    <main
+      className={
+        appearance.compactMode
+          ? "shell compactShell appearanceCompact"
+          : "shell compactShell"
+      }
+    >
       <IngredientFloatingOverlay hover={hoverIngredients} />
 
       <section className="hero compactHero">
@@ -924,13 +1009,19 @@ export default function Home() {
                           title={`ab Level ${building.level}`}
                         >
                           <BuildingIcon item={building} />
-                          <span className="buildingVisualName">{building.name}</span>
-                          <span className="buildingVisualMeta">
-                            Lv. {building.level}
-                            <br />
-                            {buildingSlots} Slot{buildingSlots === 1 ? "" : "s"}
-                            {hasCustomSlots ? " individuell" : hasDatabaseSlots ? " DB" : " fallback"}
-                          </span>
+                          {!appearance.iconsOnly && (
+                            <>
+                              <span className="buildingVisualName">{building.name}</span>
+                              {appearance.showMeta && (
+                                <span className="buildingVisualMeta">
+                                  Lv. {building.level}
+                                  <br />
+                                  {buildingSlots} Slot{buildingSlots === 1 ? "" : "s"}
+                                  {hasCustomSlots ? " individuell" : hasDatabaseSlots ? " DB" : " fallback"}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </button>
 
                         <div className="buildingSlotHover">
@@ -1012,16 +1103,22 @@ export default function Home() {
                             onMouseLeave={() => setHoverIngredients(null)}
                           >
                             <ProductIcon item={entry.product} size="large" />
-                            <strong>{entry.amount}×</strong>
-                            <span>{entry.product.name}</span>
-                            <small>
-                              {entry.role === "intermediate" ? "Zwischenprodukt · " : ""}
-                              Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)}
-                              <br />
-                              {entry.slotsUsed}/{entry.slots} Slots ·{" "}
-                              {Math.round(entry.totalCoins)} Coins ·{" "}
-                              {Math.round(entry.totalXp)} XP
-                            </small>
+                            {!appearance.iconsOnly && (
+                              <>
+                                <strong>{entry.amount}×</strong>
+                                <span>{entry.product.name}</span>
+                                {appearance.showMeta && (
+                                  <small>
+                                    {entry.role === "intermediate" ? "Zwischenprodukt · " : ""}
+                                    Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)}
+                                    <br />
+                                    {entry.slotsUsed}/{entry.slots} Slots ·{" "}
+                                    {Math.round(entry.totalCoins)} Coins ·{" "}
+                                    {Math.round(entry.totalXp)} XP
+                                  </small>
+                                )}
+                              </>
+                            )}
                           </article>
                         ))}
                       </div>
@@ -1048,12 +1145,18 @@ export default function Home() {
                         {group.items.map((item) => (
                           <article key={item.key} className="visualItem ingredientItem">
                             <ProductIcon item={item} size="large" />
-                            <strong>{item.amount}×</strong>
-                            <span>{item.name}</span>
-                            <small>
-                              {item.level ? `Lv. ${item.level}` : "ohne Level"}
-                              {item.building ? ` · ${item.building}` : ""}
-                            </small>
+                            {!appearance.iconsOnly && (
+                              <>
+                                <strong>{item.amount}×</strong>
+                                <span>{item.name}</span>
+                                {appearance.showMeta && (
+                                  <small>
+                                    {item.level ? `Lv. ${item.level}` : "ohne Level"}
+                                    {item.building ? ` · ${item.building}` : ""}
+                                  </small>
+                                )}
+                              </>
+                            )}
                           </article>
                         ))}
                       </div>
@@ -1073,9 +1176,13 @@ export default function Home() {
                   {result.intermediateProducts.map((item) => (
                     <article key={item.key} className="visualItem intermediateItem">
                       <ProductIcon item={item} size="large" />
-                      <strong>{item.amount}×</strong>
-                      <span>{item.name}</span>
-                      <small>{item.building || "Zwischenprodukt"}</small>
+                      {!appearance.iconsOnly && (
+                        <>
+                          <strong>{item.amount}×</strong>
+                          <span>{item.name}</span>
+                          {appearance.showMeta && <small>{item.building || "Zwischenprodukt"}</small>}
+                        </>
+                      )}
                     </article>
                   ))}
                 </div>
