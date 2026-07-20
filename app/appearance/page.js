@@ -3,31 +3,70 @@
 import { useEffect, useMemo, useState } from "react";
 import "./appearance.css";
 
+const colorPalettes = [
+  { id: "hay", label: "Hay", colors: ["#f7f3e8", "#fffaf0", "#46a171", "#2783de", "#d5803b"] },
+  { id: "mono", label: "Mono", colors: ["#f4f4f4", "#cfcfcf", "#8a8a8a", "#3f3f3f", "#111111"] },
+  { id: "berry", label: "Berry", colors: ["#f8d8f1", "#d98bd3", "#bf55bf", "#7b1f73", "#4b124a"] },
+  { id: "ocean", label: "Ocean", colors: ["#d9f4ff", "#84d4ed", "#18a0ce", "#0d5b78", "#0a3445"] },
+  { id: "forest", label: "Forest", colors: ["#d8f3d0", "#8bd373", "#46a171", "#2d7a20", "#163f14"] },
+  { id: "sunset", label: "Sunset", colors: ["#fff0e3", "#f7bd99", "#ed6d2f", "#c64e12", "#7f2e0b"] }
+];
+
+const paletteById = new Map(colorPalettes.map((palette) => [palette.id, palette]));
+
 const defaultAppearance = {
   theme: "system",
   compactMode: true,
   cardScale: 100,
   textScale: 100,
   iconScale: 100,
-  cornerRadius: 16,
-  accent: "#46a171",
-  panelOpacity: 94,
+  palette: "hay",
   showMeta: true,
   iconsOnly: false
 };
+
+function normalizeAppearance(value) {
+  const palette = paletteById.has(value.palette) ? value.palette : "hay";
+
+  return {
+    ...defaultAppearance,
+    ...value,
+    palette
+  };
+}
 
 function readStoredAppearance() {
   if (typeof window === "undefined") return defaultAppearance;
 
   try {
-    const stored = JSON.parse(localStorage.getItem("hayDayCalcAppearance") || "{}");
-    return {
-      ...defaultAppearance,
-      ...stored
-    };
+    return normalizeAppearance(JSON.parse(localStorage.getItem("hayDayCalcAppearance") || "{}"));
   } catch {
     return defaultAppearance;
   }
+}
+
+function getEffectiveTheme(theme) {
+  if (theme !== "system") return theme;
+
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyAppearance(appearance, effectiveTheme) {
+  const palette = paletteById.get(appearance.palette) || colorPalettes[0];
+
+  document.documentElement.dataset.theme = effectiveTheme;
+  document.documentElement.dataset.palette = palette.id;
+  document.documentElement.dataset.iconsOnly = appearance.iconsOnly ? "true" : "false";
+  document.documentElement.dataset.showMeta = appearance.showMeta ? "true" : "false";
+  document.documentElement.style.setProperty("--canvas", palette.colors[0]);
+  document.documentElement.style.setProperty("--surface", palette.colors[1]);
+  document.documentElement.style.setProperty("--green", palette.colors[2]);
+  document.documentElement.style.setProperty("--blue", palette.colors[3]);
+  document.documentElement.style.setProperty("--orange", palette.colors[4]);
+  document.documentElement.style.setProperty("--card-scale", String(appearance.cardScale / 100));
+  document.documentElement.style.setProperty("--text-scale", String(appearance.textScale / 100));
+  document.documentElement.style.setProperty("--icon-scale", String(appearance.iconScale / 100));
 }
 
 export default function AppearanceSettings() {
@@ -38,23 +77,10 @@ export default function AppearanceSettings() {
     setAppearance(readStoredAppearance());
   }, []);
 
-  const effectiveTheme = useMemo(() => {
-    if (appearance.theme !== "system") return appearance.theme;
-
-    if (typeof window === "undefined") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }, [appearance.theme]);
+  const effectiveTheme = useMemo(() => getEffectiveTheme(appearance.theme), [appearance.theme]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = effectiveTheme;
-    document.documentElement.dataset.iconsOnly = appearance.iconsOnly ? "true" : "false";
-    document.documentElement.dataset.showMeta = appearance.showMeta ? "true" : "false";
-    document.documentElement.style.setProperty("--green", appearance.accent);
-    document.documentElement.style.setProperty("--card-scale", String(appearance.cardScale / 100));
-    document.documentElement.style.setProperty("--text-scale", String(appearance.textScale / 100));
-    document.documentElement.style.setProperty("--icon-scale", String(appearance.iconScale / 100));
-    document.documentElement.style.setProperty("--panel-radius", `${appearance.cornerRadius}px`);
-    document.documentElement.style.setProperty("--panel-opacity", String(appearance.panelOpacity / 100));
+    applyAppearance(appearance, effectiveTheme);
   }, [appearance, effectiveTheme]);
 
   function persistAppearance(nextAppearance) {
@@ -68,10 +94,10 @@ export default function AppearanceSettings() {
 
   function updateValue(key, value) {
     setAppearance((current) => {
-      const nextAppearance = {
+      const nextAppearance = normalizeAppearance({
         ...current,
         [key]: value
-      };
+      });
 
       persistAppearance(nextAppearance);
       return nextAppearance;
@@ -117,16 +143,29 @@ export default function AppearanceSettings() {
           </section>
 
           <section className="appearanceSection">
-            <h2>Darstellung</h2>
+            <h2>Design-Farbkombination</h2>
+            <div className="paletteGrid">
+              {colorPalettes.map((palette) => (
+                <button
+                  key={palette.id}
+                  type="button"
+                  className={appearance.palette === palette.id ? "paletteOption active" : "paletteOption"}
+                  onClick={() => updateValue("palette", palette.id)}
+                  title={palette.label}
+                >
+                  <span className="paletteName">{palette.label}</span>
+                  <span className="paletteSwatches">
+                    {palette.colors.map((color) => (
+                      <span key={color} style={{ background: color }} />
+                    ))}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
 
-            <label className="field compactField">
-              <span>Akzentfarbe</span>
-              <input
-                type="color"
-                value={appearance.accent}
-                onChange={(event) => updateValue("accent", event.target.value)}
-              />
-            </label>
+          <section className="appearanceSection">
+            <h2>Darstellung</h2>
 
             <label className="field compactField">
               <span>Kachelgröße: {appearance.cardScale}%</span>
@@ -164,39 +203,14 @@ export default function AppearanceSettings() {
               />
             </label>
 
-          <label className="field compactField">
-            <span>Rundung: {appearance.cornerRadius}px</span>
-            <input
-              type="range"
-              min="8"
-              max="24"
-              step="1"
-              value={appearance.cornerRadius}
-              onChange={(event) => updateValue("cornerRadius", Number(event.target.value))}
-            />
-          </label>
-
-          <label className="field compactField">
-            <span>Panel-Deckkraft: {appearance.panelOpacity}%</span>
-            <input
-              type="range"
-              min="70"
-              max="100"
-              step="1"
-              value={appearance.panelOpacity}
-              onChange={(event) => updateValue("panelOpacity", Number(event.target.value))}
-            />
-          </label>
-
-          <label className="checkbox compactCheckbox singleCheckbox">
-            <input
-              type="checkbox"
-              checked={appearance.compactMode}
-              onChange={(event) => updateValue("compactMode", event.target.checked)}
-            />
-            Kompakter Modus
-          </label>
-
+            <label className="checkbox compactCheckbox singleCheckbox">
+              <input
+                type="checkbox"
+                checked={appearance.compactMode}
+                onChange={(event) => updateValue("compactMode", event.target.checked)}
+              />
+              Kompakter Modus
+            </label>
           </section>
 
           <section className="appearanceSection">
