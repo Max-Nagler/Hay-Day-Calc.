@@ -182,6 +182,24 @@ export default function Home() {
 
   const [hoverIngredients, setHoverIngredients] = useState(null);
   const [settingsColumnHeight, setSettingsColumnHeight] = useState(null);
+  const [profiles, setProfiles] = useState([]);
+  const [profileName, setProfileName] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+
+  useEffect(() => {
+    try {
+      const storedProfiles = JSON.parse(localStorage.getItem("hayDayCalcProfiles") || "[]");
+      if (Array.isArray(storedProfiles)) {
+        setProfiles(storedProfiles);
+      }
+    } catch {
+      setProfiles([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("hayDayCalcProfiles", JSON.stringify(profiles));
+  }, [profiles]);
 
   useEffect(() => {
     async function loadData() {
@@ -499,6 +517,67 @@ export default function Home() {
     setExcludedIngredientNames((current) => current.filter((item) => item !== name));
   }
 
+  function createProfileSnapshot() {
+    return {
+      mode,
+      level,
+      hours,
+      globalSlots,
+      slotsByBuilding,
+      intermediateMustBeProduced,
+      excludedIngredientNames,
+      allowedBuildings,
+      userChangedBuildings
+    };
+  }
+
+  function saveProfile() {
+    const trimmedName = profileName.trim() || `Profil ${profiles.length + 1}`;
+    const id = selectedProfileId || crypto.randomUUID();
+
+    const nextProfile = {
+      id,
+      name: trimmedName,
+      updatedAt: new Date().toISOString(),
+      settings: createProfileSnapshot()
+    };
+
+    setProfiles((current) => {
+      const withoutCurrent = current.filter((profile) => profile.id !== id);
+      return [...withoutCurrent, nextProfile].sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    setSelectedProfileId(id);
+    setProfileName(trimmedName);
+  }
+
+  function loadProfile(profileId) {
+    const profile = profiles.find((item) => item.id === profileId);
+    if (!profile) return;
+
+    const settings = profile.settings || {};
+
+    setSelectedProfileId(profile.id);
+    setProfileName(profile.name || "");
+    setMode(settings.mode || "");
+    setLevel(Number(settings.level || 50));
+    setHours(Number(settings.hours || 8));
+    setGlobalSlots(Number(settings.globalSlots || 4));
+    setSlotsByBuilding(settings.slotsByBuilding || {});
+    setIntermediateMustBeProduced(Boolean(settings.intermediateMustBeProduced));
+    setExcludedIngredientNames(settings.excludedIngredientNames || []);
+    setAllowedBuildings(settings.allowedBuildings || []);
+    setUserChangedBuildings(Boolean(settings.userChangedBuildings));
+  }
+
+  function deleteProfile() {
+    if (!selectedProfileId) return;
+
+    setProfiles((current) => current.filter((profile) => profile.id !== selectedProfileId));
+    setSelectedProfileId("");
+    setProfileName("");
+  }
+
   function startCalculation() {
     if (!baseSettingsComplete || allowedBuildings.length === 0) return;
 
@@ -728,6 +807,53 @@ export default function Home() {
                 )}
               </div>
             )}
+          </details>
+
+          <details className="panel compactPanel">
+            <summary>Profile</summary>
+
+            <div className="profileBox">
+              <div className="profileRow">
+                <select
+                  value={selectedProfileId}
+                  onChange={(event) => {
+                    const profile = profiles.find((item) => item.id === event.target.value);
+                    setSelectedProfileId(event.target.value);
+                    setProfileName(profile?.name || "");
+                  }}
+                >
+                  <option value="">Neues Profil</option>
+                  {profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button type="button" onClick={() => loadProfile(selectedProfileId)} disabled={!selectedProfileId}>
+                  Laden
+                </button>
+              </div>
+
+              <div className="profileRow">
+                <input
+                  type="text"
+                  placeholder="Profilname"
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                />
+
+                <button type="button" onClick={saveProfile}>
+                  Speichern
+                </button>
+              </div>
+
+              {selectedProfileId && (
+                <button type="button" className="profileDeleteButton" onClick={deleteProfile}>
+                  Profil löschen
+                </button>
+              )}
+            </div>
           </details>
 
           <button
