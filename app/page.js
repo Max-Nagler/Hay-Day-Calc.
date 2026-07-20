@@ -310,8 +310,10 @@ export default function Home() {
       mode,
       level,
       hours,
+      globalSlots,
       allowedBuildings,
       slotsByBuilding,
+      assumeIntermediateStock,
       resolveToBaseIngredients
     });
   }, [
@@ -320,8 +322,10 @@ export default function Home() {
     mode,
     level,
     hours,
+    globalSlots,
     allowedBuildings,
     slotsByBuilding,
+    assumeIntermediateStock,
     resolveToBaseIngredients
   ]);
 
