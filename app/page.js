@@ -190,6 +190,15 @@ const modes = [
   { id: "slots", label: "Slots" }
 ];
 
+const defaultExcludedIngredients = [
+  "Diamanten",
+  "Honig",
+  "Goldbarren",
+  "Bienenwachs",
+  "Fischfilet",
+  "Hummer"
+];
+
 function formatMinutes(minutes) {
   if (!minutes) return "0 min";
 
@@ -221,6 +230,9 @@ export default function Home() {
   const [globalSlots, setGlobalSlots] = useState(5);
 
   const [intermediateMustBeProduced, setIntermediateMustBeProduced] = useState(false);
+
+  const [excludedIngredientNames, setExcludedIngredientNames] = useState([]);
+  const [customExcludedIngredient, setCustomExcludedIngredient] = useState("");
 
   const [allowedBuildings, setAllowedBuildings] = useState([]);
   const [userChangedBuildings, setUserChangedBuildings] = useState(false);
@@ -289,7 +301,15 @@ export default function Home() {
   useEffect(() => {
     setCalculationStarted(false);
     setCalculationSettings(null);
-  }, [mode, level, hours, globalSlots, intermediateMustBeProduced, allowedBuildings]);
+  }, [
+    mode,
+    level,
+    hours,
+    globalSlots,
+    intermediateMustBeProduced,
+    excludedIngredientNames,
+    allowedBuildings
+  ]);
 
   const result = useMemo(() => {
     if (!calculationStarted || !calculationSettings) return null;
@@ -302,7 +322,8 @@ export default function Home() {
       hours: calculationSettings.hours,
       globalSlots: calculationSettings.globalSlots,
       allowedBuildings: calculationSettings.allowedBuildings,
-      intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced
+      intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced,
+      excludedIngredientNames: calculationSettings.excludedIngredientNames
     });
   }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
 
@@ -328,6 +349,35 @@ export default function Home() {
     setAllowedBuildings([]);
   }
 
+  function toggleExcludedIngredient(name) {
+    setExcludedIngredientNames((current) => {
+      if (current.includes(name)) {
+        return current.filter((item) => item !== name);
+      }
+
+      return [...current, name];
+    });
+  }
+
+  function addCustomExcludedIngredient() {
+    const value = customExcludedIngredient.trim();
+    if (!value) return;
+
+    setExcludedIngredientNames((current) => {
+      if (current.some((item) => item.toLowerCase() === value.toLowerCase())) {
+        return current;
+      }
+
+      return [...current, value];
+    });
+
+    setCustomExcludedIngredient("");
+  }
+
+  function removeExcludedIngredient(name) {
+    setExcludedIngredientNames((current) => current.filter((item) => item !== name));
+  }
+
   function startCalculation() {
     if (!baseSettingsComplete || allowedBuildings.length === 0) return;
 
@@ -337,7 +387,8 @@ export default function Home() {
       hours,
       globalSlots,
       allowedBuildings,
-      intermediateMustBeProduced
+      intermediateMustBeProduced,
+      excludedIngredientNames
     });
 
     setCalculationStarted(true);
@@ -456,6 +507,63 @@ export default function Home() {
                   />
                   Zwischenprodukte müssen hergestellt werden
                 </label>
+
+                <div className="excludedBox">
+                  <div className="excludedHeader">
+                    <strong>Zutaten ausschließen</strong>
+                    <small>{excludedIngredientNames.length} aktiv</small>
+                  </div>
+
+                  <div className="excludedQuickGrid">
+                    {defaultExcludedIngredients.map((ingredient) => (
+                      <button
+                        key={ingredient}
+                        type="button"
+                        className={
+                          excludedIngredientNames.includes(ingredient)
+                            ? "excludedChip active"
+                            : "excludedChip"
+                        }
+                        onClick={() => toggleExcludedIngredient(ingredient)}
+                      >
+                        {ingredient}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="excludedInputRow">
+                    <input
+                      type="text"
+                      placeholder="Weitere Zutat"
+                      value={customExcludedIngredient}
+                      onChange={(event) => setCustomExcludedIngredient(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addCustomExcludedIngredient();
+                        }
+                      }}
+                    />
+                    <button type="button" onClick={addCustomExcludedIngredient}>
+                      +
+                    </button>
+                  </div>
+
+                  {excludedIngredientNames.length > 0 && (
+                    <div className="activeExcludedList">
+                      {excludedIngredientNames.map((ingredient) => (
+                        <button
+                          key={ingredient}
+                          type="button"
+                          onClick={() => removeExcludedIngredient(ingredient)}
+                          title="Entfernen"
+                        >
+                          {ingredient} ×
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="button"
