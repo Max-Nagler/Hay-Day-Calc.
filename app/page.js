@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { calculateProductionPlan, getAvailableBuildings } from "../lib/calculator";
 import { normalizeData } from "../lib/normalize";
 
@@ -17,9 +17,11 @@ const modes = [
   { id: "slots", label: "Slots" }
 ];
 
-const specialExcludedNames = ["Fischfilet", "Hummerschwanz", "Entenfeder"];
+const oreNames = ["Silbererz", "Golderz", "Platinerz", "Kohle", "Eisenerz"];
 
-const specialExcludedBuildings = ["Mine", "Schmelzofen", "Honigschleuder"];
+const specialExcludedNames = ["Honig", "Bienenwachs", "Fischfilet", "Hummerschwanz", "Entenfeder"];
+
+const specialExcludedBuildings = ["Mine", "Schmelzofen"];
 
 function formatMinutes(minutes) {
   if (!minutes) return "0 min";
@@ -155,6 +157,7 @@ function IngredientFloatingOverlay({ hover }) {
 
 export default function Home() {
   const outputRef = useRef(null);
+  const settingsColumnRef = useRef(null);
 
   const [rawData, setRawData] = useState(fallbackRawData);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,6 +181,7 @@ export default function Home() {
   const [calculationSettings, setCalculationSettings] = useState(null);
 
   const [hoverIngredients, setHoverIngredients] = useState(null);
+  const [settingsColumnHeight, setSettingsColumnHeight] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -220,11 +224,54 @@ export default function Home() {
 
         return (
           specialExcludedBuildings.some((item) => normalizeName(item) === building) ||
-          specialExcludedNames.some((item) => normalizeName(item) === name)
+          specialExcludedNames.some((item) => normalizeName(item) === name) ||
+          oreNames.some((item) => normalizeName(item) === name)
         );
       })
     );
   }, [normalized.products]);
+
+  const excludedProductByName = useMemo(() => {
+    const map = new Map();
+
+    for (const product of selectableExcludedProducts) {
+      map.set(product.name, product);
+    }
+
+    return map;
+  }, [selectableExcludedProducts]);
+
+  const excludedGroups = useMemo(() => {
+    const productsByBuilding = new Map();
+
+    for (const product of selectableExcludedProducts) {
+      const building = product.building || "";
+
+      if (!productsByBuilding.has(building)) {
+        productsByBuilding.set(building, []);
+      }
+
+      productsByBuilding.get(building).push(product.name);
+    }
+
+    return [
+      {
+        key: "ores",
+        label: "Erze",
+        names: oreNames.filter((name) => excludedProductByName.has(name))
+      },
+      {
+        key: "smelter",
+        label: "Schmelzofen",
+        names: productsByBuilding.get("Schmelzofen") || []
+      },
+      ...specialExcludedNames.map((name) => ({
+        key: name,
+        label: name,
+        names: excludedProductByName.has(name) ? [name] : []
+      }))
+    ].filter((group) => group.names.length);
+  }, [excludedProductByName, selectableExcludedProducts]);
 
   const baseSettingsComplete =
     Boolean(mode) &&
@@ -294,6 +341,22 @@ export default function Home() {
       return next;
     });
   }, [availableBuildingNames, baseSettingsComplete, userChangedBuildings]);
+
+  useLayoutEffect(() => {
+    const node = settingsColumnRef.current;
+    if (!node) return;
+
+    function updateHeight() {
+      setSettingsColumnHeight(node.getBoundingClientRect().height);
+    }
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [baseSettingsComplete, excludedIngredientNames.length]);
 
   useEffect(() => {
     setCalculationStarted(false);
@@ -389,6 +452,18 @@ export default function Home() {
     });
   }
 
+  function toggleExcludedGroup(names) {
+    setExcludedIngredientNames((current) => {
+      const allActive = names.every((name) => current.includes(name));
+
+      if (allActive) {
+        return current.filter((item) => !names.includes(item));
+      }
+
+      return Array.from(new Set([...current, ...names]));
+    });
+  }
+
   function addCustomExcludedIngredient() {
     const value = customExcludedIngredient.trim();
     if (!value) return;
@@ -481,7 +556,7 @@ export default function Home() {
       </section>
 
       <section className="settingsGrid compactSettingsGrid equalSettingsGrid">
-        <div className="settingsColumn">
+        <div className="settingsColumn" ref={settingsColumnRef}>
           <details open className="panel compactPanel">
             <summary>Grunddaten</summary>
 
@@ -570,30 +645,32 @@ export default function Home() {
             open={baseSettingsComplete}
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
           >
-            <summary>Produkte ausschließen</summary>
+            <summary>Zutaten ausschließen</summary>
 
             {!baseSettingsComplete ? (
               <p className="empty">Wird nach den Grunddaten freigeschaltet.</p>
             ) : (
               <div className="excludedBox exclusionStandaloneBox">
                 <div className="excludedHeader">
-                  <strong>Ausgeschlossene Produkte</strong>
+                  <strong>Ausgeschlossene Zutaten</strong>
                   <small>{excludedIngredientNames.length} aktiv</small>
                 </div>
 
                 <div className="excludedSmartGrid">
-                  {selectableExcludedProducts.map((product) => {
-                    const active = excludedIngredientNames.includes(product.name);
+                  {excludedGroups.map((group) => {
+                    const active = group.names.every((name) => excludedIngredientNames.includes(name));
+                    const representativeProduct = excludedProductByName.get(group.names[0]);
 
                     return (
                       <button
-                        key={product.key}
+                        key={group.key}
                         type="button"
                         className={active ? "excludedSmartChip active" : "excludedSmartChip"}
-                        onClick={() => toggleExcludedIngredient(product.name)}
+                        onClick={() => toggleExcludedGroup(group.names)}
+                        title={group.names.join(", ")}
                       >
-                        <ProductIcon item={product} />
-                        <span>{product.name}</span>
+                        <ProductIcon item={representativeProduct} />
+                        <span>{group.label}</span>
                       </button>
                     );
                   })}
@@ -658,6 +735,7 @@ export default function Home() {
                 ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle"
                 : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"
             }
+            style={settingsColumnHeight ? { height: settingsColumnHeight } : undefined}
           >
             <div className="panelStaticHeader">Produktionsgebäude</div>
 
