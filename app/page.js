@@ -17,13 +17,16 @@ const modes = [
   { id: "slots", label: "Slots" }
 ];
 
-const defaultExcludedIngredients = [
-  "Diamanten",
-  "Honig",
-  "Goldbarren",
-  "Bienenwachs",
+const specialExcludedNames = [
   "Fischfilet",
-  "Hummer"
+  "Hummerschwanz",
+  "Entenfeder"
+];
+
+const specialExcludedBuildings = [
+  "Mine",
+  "Schmelzofen",
+  "Honigschleuder"
 ];
 
 function formatMinutes(minutes) {
@@ -35,6 +38,12 @@ function formatMinutes(minutes) {
   if (h && m) return `${h} h ${m} min`;
   if (h) return `${h} h`;
   return `${m} min`;
+}
+
+function normalizeName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function ProductIcon({ item, size = "normal" }) {
@@ -93,13 +102,20 @@ function uniqueByName(items) {
   });
 }
 
-function IngredientPreview({ entry }) {
-  const ingredients = Array.from(entry.ingredientsMap?.entries?.() || [])
+function createIngredientLookup(products) {
+  const map = {};
+
+  for (const product of products || []) {
+    map[product.key] = product;
+  }
+
+  return map;
+}
+
+function getEntryIngredients(entry, ingredientLookup) {
+  return Array.from(entry.ingredientsMap?.entries?.() || [])
     .map(([key, amount]) => {
-      const product =
-        entry.product?.ingredientsByKey?.[key] ||
-        entry.ingredients?.find?.((item) => item.key === key) ||
-        null;
+      const product = ingredientLookup[key];
 
       return {
         key,
@@ -110,38 +126,39 @@ function IngredientPreview({ entry }) {
       };
     })
     .filter((item) => item.name);
-
-  if (!ingredients.length) {
-    return (
-      <div className="ingredientHoverPanel">
-        <span className="ingredientHoverEmpty">Keine Zutaten</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="ingredientHoverPanel">
-      <strong>Zutaten</strong>
-      <div className="ingredientHoverGrid">
-        {ingredients.map((item) => (
-          <div key={item.key} className="ingredientHoverItem">
-            <ProductIcon item={item} />
-            <span>{item.amount}×</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
-function createIngredientLookup(products) {
-  const map = {};
+function IngredientFloatingOverlay({ hover }) {
+  if (!hover) return null;
 
-  for (const product of products || []) {
-    map[product.key] = product;
-  }
+  const left = Math.min(Math.max(hover.x, 130), window.innerWidth - 130);
+  const top = Math.max(hover.y - 14, 80);
 
-  return map;
+  return (
+    <div
+      className="floatingIngredientPanel"
+      style={{
+        left,
+        top
+      }}
+    >
+      <strong>{hover.productName}</strong>
+
+      {hover.ingredients.length ? (
+        <div className="floatingIngredientGrid">
+          {hover.ingredients.map((item) => (
+            <div key={item.key} className="floatingIngredientItem">
+              <ProductIcon item={item} />
+              <span>{item.amount}×</span>
+              <small>{item.name}</small>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <span className="ingredientHoverEmpty">Keine Zutaten</span>
+      )}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -165,6 +182,8 @@ export default function Home() {
 
   const [calculationStarted, setCalculationStarted] = useState(false);
   const [calculationSettings, setCalculationSettings] = useState(null);
+
+  const [hoverIngredients, setHoverIngredients] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -202,16 +221,12 @@ export default function Home() {
   const selectableExcludedProducts = useMemo(() => {
     return uniqueByName(
       normalized.products.filter((product) => {
-        const type = String(product.type || "").toLowerCase();
+        const building = normalizeName(product.building);
+        const name = normalizeName(product.name);
 
         return (
-          type.includes("rohstoff") ||
-          type.includes("feld") ||
-          type.includes("tier") ||
-          type.includes("baum") ||
-          type.includes("busch") ||
-          type.includes("zwischenprodukt") ||
-          !product.building
+          specialExcludedBuildings.some((item) => normalizeName(item) === building) ||
+          specialExcludedNames.some((item) => normalizeName(item) === name)
         );
       })
     );
@@ -303,7 +318,7 @@ export default function Home() {
   const result = useMemo(() => {
     if (!calculationStarted || !calculationSettings) return null;
 
-    const calculated = calculateProductionPlan({
+    return calculateProductionPlan({
       products: normalized.products,
       recipes: normalized.recipes,
       mode: calculationSettings.mode,
@@ -316,26 +331,11 @@ export default function Home() {
       intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced,
       excludedIngredientNames: calculationSettings.excludedIngredientNames
     });
-
-    return {
-      ...calculated,
-      productionByBuilding: calculated.productionByBuilding.map((group) => ({
-        ...group,
-        items: group.items.map((entry) => ({
-          ...entry,
-          product: {
-            ...entry.product,
-            ingredientsByKey: ingredientLookup
-          }
-        }))
-      }))
-    };
   }, [
     normalized.products,
     normalized.recipes,
     calculationStarted,
-    calculationSettings,
-    ingredientLookup
+    calculationSettings
   ]);
 
   function getBuildingSlots(buildingName) {
@@ -426,8 +426,33 @@ export default function Home() {
     setCalculationStarted(true);
   }
 
+  function showIngredientOverlay(event, entry) {
+    const ingredients = getEntryIngredients(entry, ingredientLookup);
+
+    setHoverIngredients({
+      x: event.clientX,
+      y: event.clientY,
+      productName: entry.product.name,
+      ingredients
+    });
+  }
+
+  function moveIngredientOverlay(event) {
+    setHoverIngredients((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        x: event.clientX,
+        y: event.clientY
+      };
+    });
+  }
+
   return (
     <main className="shell compactShell">
+      <IngredientFloatingOverlay hover={hoverIngredients} />
+
       <section className="hero compactHero">
         <div>
           <p className="eyebrow">Hay Day Calc.</p>
@@ -546,27 +571,23 @@ export default function Home() {
                     <small>{excludedIngredientNames.length} aktiv</small>
                   </div>
 
-                  <details className="multiSelectDropdown">
-                    <summary>
-                      {excludedIngredientNames.length
-                        ? `${excludedIngredientNames.length} ausgewählt`
-                        : "Produkte auswählen"}
-                    </summary>
+                  <div className="excludedSmartGrid">
+                    {selectableExcludedProducts.map((product) => {
+                      const active = excludedIngredientNames.includes(product.name);
 
-                    <div className="multiSelectMenu">
-                      {selectableExcludedProducts.map((product) => (
-                        <label key={product.key} className="multiSelectOption">
-                          <input
-                            type="checkbox"
-                            checked={excludedIngredientNames.includes(product.name)}
-                            onChange={() => toggleExcludedIngredient(product.name)}
-                          />
+                      return (
+                        <button
+                          key={product.key}
+                          type="button"
+                          className={active ? "excludedSmartChip active" : "excludedSmartChip"}
+                          onClick={() => toggleExcludedIngredient(product.name)}
+                        >
                           <ProductIcon item={product} />
                           <span>{product.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </details>
+                        </button>
+                      );
+                    })}
+                  </div>
 
                   <div className="excludedInputRow">
                     <input
@@ -622,8 +643,8 @@ export default function Home() {
         </div>
 
         <div className="buildingsColumn equalBuildingsColumn">
-          <details className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel" : "panel compactPanel disabled equalBuildingsPanel"}>
-            <summary>Produktionsgebäude</summary>
+          <section className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle" : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"}>
+            <div className="panelStaticHeader">Produktionsgebäude</div>
 
             {!baseSettingsComplete ? (
               <p className="empty">Gebäude erscheinen nach den Grunddaten.</p>
@@ -697,7 +718,7 @@ export default function Home() {
                 </div>
               </>
             )}
-          </details>
+          </section>
         </div>
       </section>
 
@@ -741,11 +762,11 @@ export default function Home() {
                                 ? "visualItem intermediateItem"
                                 : "visualItem"
                             }
+                            onMouseEnter={(event) => showIngredientOverlay(event, entry)}
+                            onMouseMove={moveIngredientOverlay}
+                            onMouseLeave={() => setHoverIngredients(null)}
                           >
-                            <div className="visualItemHoverWrap">
-                              <ProductIcon item={entry.product} size="large" />
-                              <IngredientPreview entry={entry} />
-                            </div>
+                            <ProductIcon item={entry.product} size="large" />
                             <strong>{entry.amount}×</strong>
                             <span>{entry.product.name}</span>
                             <small>
