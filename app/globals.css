@@ -477,6 +477,40 @@ select:focus {
   font-weight: 750;
 }
 
+.profileBox {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.profileRow {
+  display: grid;
+  grid-template-columns: 1fr 86px;
+  gap: 6px;
+}
+
+.profileRow button,
+.profileDeleteButton {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.profileRow button:disabled {
+  opacity: 0.45;
+}
+
+.profileDeleteButton {
+  border-color: rgba(229, 100, 88, 0.28);
+  background: var(--red-soft);
+  color: #9e332b;
+}
+
 .calculateButton {
   width: 100%;
   min-height: 42px;
