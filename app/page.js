@@ -239,6 +239,8 @@ export default function Home() {
   const [level, setLevel] = useState(33);
   const [hours, setHours] = useState(8);
   const [resolveToBaseIngredients, setResolveToBaseIngredients] = useState(true);
+  const [assumeIntermediateStock, setAssumeIntermediateStock] = useState(false);
+  const [globalSlots, setGlobalSlots] = useState(5);
   const [allowedBuildings, setAllowedBuildings] = useState([]);
   const [slotsByBuilding, setSlotsByBuilding] = useState({});
 
