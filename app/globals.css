@@ -609,4 +609,39 @@ select:focus {
   details.panel > *:last-child {
     margin-bottom: 18px;
   }
+
+    .buildingActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 18px 22px 12px;
+  }
+
+  .buildingActions button {
+    min-height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--surface-strong);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .buildingActions button:hover {
+    background: var(--surface-soft);
+  }
+
+  .helperText {
+    margin: 0 22px 14px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .buildingHint {
+    margin: 0;
+    padding: 0 12px 12px 52px;
+    color: var(--muted);
+    font-size: 12px;
+  }
 }
