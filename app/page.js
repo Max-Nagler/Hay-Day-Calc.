@@ -421,6 +421,18 @@ export default function Home() {
                 onChange={(event) => setHours(Number(event.target.value))}
               />
             </label>
+
+            <label className="field">
+              <span>Freie Slots pro Warteschlange: {globalSlots}</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={globalSlots}
+                  onChange={(event) => setGlobalSlots(Number(event.target.value))}
+                />
+            </label>
           </details>
 
           <details open={canShowAdvanced} className={canShowAdvanced ? "panel" : "panel disabled"}>
@@ -433,6 +445,15 @@ export default function Home() {
                 onChange={(event) => setResolveToBaseIngredients(event.target.checked)}
               />
               Bis auf Grundzutaten zurückrechnen
+            </label>
+            
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={assumeIntermediateStock}
+                onChange={(event) => setAssumeIntermediateStock(event.target.checked)}
+                />
+                Zwischenprodukte sind bereits auf Lager
             </label>
 
             <div className="buildingList">
@@ -513,6 +534,7 @@ export default function Home() {
                             <strong>{entry.amount}× {entry.product.name}</strong>
                             <small>
                               Level {entry.product.level} · {formatMinutes(entry.product.timeMin)} ·{" "}
+                              {formatMinutes(entry.effectiveTimeMin)} inkl. Vorprodukte ·{" "}
                               {Math.round(entry.totalCoins)} Coins · {Math.round(entry.totalXp)} XP
                             </small>
                           </span>
