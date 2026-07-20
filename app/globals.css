@@ -489,20 +489,17 @@ select:focus {
   box-shadow: 0 7px 16px rgba(70, 161, 113, 0.16);
 }
 
+.compactCalculateButton {
+  min-height: 36px;
+  margin-top: 0;
+  padding: 8px 12px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
 .calculateButton:hover:not(:disabled) {
   filter: brightness(0.98);
   transform: translateY(-1px);
-}
-
-.ghostButton {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-strong);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .buildingActions {
@@ -535,8 +532,8 @@ select:focus {
 
 .buildingVisualGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 4px 7px;
   max-height: 430px;
   overflow: auto;
   padding-right: 3px;
@@ -545,10 +542,11 @@ select:focus {
 .equalBuildingsGrid {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
-  overflow: auto;
+  max-height: 548px;
+  overflow-y: auto;
+  overflow-x: hidden;
   align-content: start;
-  padding: 0 16px 16px;
+  padding: 0 12px 12px;
   margin: 0;
   overscroll-behavior: contain;
 }
@@ -565,15 +563,15 @@ select:focus {
 .buildingVisualCard {
   position: relative;
   min-width: 0;
-  padding-bottom: 52px;
+  padding-bottom: 42px;
 }
 
 .buildingVisualButton {
   display: grid;
   justify-items: center;
   width: 100%;
-  min-height: 122px;
-  padding: 8px 6px;
+  min-height: 114px;
+  padding: 6px 5px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface-strong);
@@ -587,9 +585,9 @@ select:focus {
 }
 
 .buildingVisualIcon {
-  width: 68px;
-  height: 68px;
-  margin-bottom: 4px;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 3px;
   object-fit: contain;
   border-radius: 10px;
 }
@@ -607,7 +605,7 @@ select:focus {
   width: 100%;
   overflow: hidden;
   color: var(--text);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 850;
   line-height: 1.1;
   text-overflow: ellipsis;
@@ -617,7 +615,7 @@ select:focus {
 .buildingVisualMeta {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1.1;
 }
 
@@ -626,11 +624,11 @@ select:focus {
   z-index: 5;
   right: 0;
   left: 0;
-  top: calc(100% - 46px);
+  top: calc(100% - 39px);
   display: grid;
   gap: 5px;
-  min-height: 48px;
-  padding: 7px;
+  min-height: 40px;
+  padding: 5px;
   border: 1px solid var(--border-warm);
   border-radius: 12px;
   background: rgba(255, 250, 240, 0.98);
@@ -638,9 +636,7 @@ select:focus {
   opacity: 0;
   pointer-events: none;
   transform: translateY(-4px);
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
 .buildingVisualCard:hover .buildingSlotHover,
@@ -657,7 +653,7 @@ select:focus {
 
 .buildingSlotHover label span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 750;
 }
 
@@ -666,12 +662,12 @@ select:focus {
 }
 
 .buildingSlotHover button {
-  min-height: 24px;
+  min-height: 21px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-strong);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 750;
 }
 
@@ -777,19 +773,6 @@ select:focus {
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 3px;
-}
-
-.visualItemGrid::-webkit-scrollbar {
-  height: 7px;
-}
-
-.visualItemGrid::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: var(--border-warm);
-}
-
-.visualItemGrid.standalone {
-  margin-top: 12px;
 }
 
 .visualItem {
@@ -930,29 +913,6 @@ select:focus {
   background: rgba(255, 255, 255, 0.82);
 }
 
-.iconFallback,
-.iconImage {
-  width: 68px;
-  height: 68px;
-  flex: 0 0 auto;
-  object-fit: contain;
-  border-radius: 10px;
-}
-
-.iconFallback {
-  display: grid;
-  place-items: center;
-  background: var(--green-soft);
-  color: var(--green);
-  font-size: 24px;
-  font-weight: 850;
-}
-
-.iconImage {
-  border: 1px solid var(--border);
-  background: var(--surface-soft);
-}
-
 .warnings {
   padding: 12px 14px;
   border: 1px solid rgba(213, 128, 59, 0.25);
@@ -1029,7 +989,8 @@ select:focus {
   }
 
   .equalBuildingsGrid {
-    max-height: 520px;
+    max-height: 548px;
+    overflow-y: auto;
   }
 }
 
@@ -1068,7 +1029,20 @@ select:focus {
   }
 
   .buildingVisualGrid {
-    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  }
+
+  .buildingVisualButton {
+    min-height: 108px;
+  }
+
+  .buildingVisualIcon {
+    width: 58px;
+    height: 58px;
+  }
+
+  .equalBuildingsGrid {
+    max-height: 520px;
   }
 
   .visualProductionGrid {
