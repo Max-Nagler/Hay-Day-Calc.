@@ -1074,10 +1074,6 @@ select:focus {
   display: none;
 }
 
-.appearanceCompact .visualProductionGrid {
-  gap: 12px 10px;
-}
-
 :root[data-theme="dark"] .syncBox,
 :root[data-theme="dark"] .summaryCard,
 :root[data-theme="dark"] .excludedBox,
