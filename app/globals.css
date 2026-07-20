@@ -167,7 +167,7 @@ h3 {
 }
 
 .equalSettingsGrid {
-  align-items: stretch;
+  align-items: start;
 }
 
 .settingsColumn,
@@ -175,11 +175,11 @@ h3 {
   display: grid;
   gap: 12px;
   min-width: 0;
+  align-content: start;
 }
 
-.equalSettingsGrid > .settingsColumn,
-.equalSettingsGrid > .equalBuildingsColumn {
-  height: 100%;
+.settingsColumn {
+  grid-auto-rows: max-content;
 }
 
 .equalBuildingsColumn {
