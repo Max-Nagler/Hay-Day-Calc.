@@ -1,14 +1,14 @@
 .appearanceShell {
-  width: min(760px, 100%);
+  width: min(820px, 100%);
   padding: 14px;
 }
 
 .appearancePanel {
   overflow: hidden;
-  border-radius: var(--panel-radius, 18px);
+  border-radius: 18px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--green) 12%, transparent), transparent 38%),
-    rgba(255, 250, 240, var(--panel-opacity, 0.94));
+    linear-gradient(135deg, color-mix(in srgb, var(--green) 14%, transparent), transparent 38%),
+    var(--surface);
 }
 
 .appearanceBody {
@@ -23,7 +23,7 @@
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.52);
+  background: color-mix(in srgb, var(--surface-strong) 78%, transparent);
 }
 
 .appearanceSection h2 {
@@ -57,18 +57,48 @@
 }
 
 .appearanceSegment button.active {
-  border-color: color-mix(in srgb, var(--green) 34%, transparent);
-  background: color-mix(in srgb, var(--green) 14%, transparent);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+  background: color-mix(in srgb, var(--green) 16%, transparent);
   color: var(--text);
 }
 
-.appearanceBody input[type="color"] {
-  width: 100%;
-  height: 38px;
-  padding: 4px;
+.paletteGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.paletteOption {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface-strong);
+  color: var(--text);
+  text-align: left;
+}
+
+.paletteOption.active {
+  border-color: color-mix(in srgb, var(--green) 56%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--green) 18%, transparent);
+}
+
+.paletteName {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.paletteSwatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.paletteSwatches span {
+  min-height: 34px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
 }
 
 .appearancePreview {
@@ -80,12 +110,12 @@
   border-radius: 16px;
   background:
     radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--green) 18%, transparent), transparent 11rem),
-    rgba(255, 255, 255, 0.45);
+    color-mix(in srgb, var(--surface-strong) 55%, transparent);
 }
 
 .appearancePreview .visualItem {
-  border-radius: var(--panel-radius, 16px);
-  background: rgba(255, 250, 240, var(--panel-opacity, 0.94));
+  border-radius: 16px;
+  background: var(--surface-strong);
   transform: scale(var(--card-scale, 1));
 }
 
@@ -123,13 +153,6 @@
   color: #ffffff;
 }
 
-[data-theme="dark"] .appearancePanel {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--green) 18%, transparent), transparent 40%),
-    rgba(35, 31, 26, var(--panel-opacity, 0.94));
-}
-
-[data-theme="dark"] .appearanceSection,
-[data-theme="dark"] .appearancePreview {
-  background: rgba(255, 255, 255, 0.06);
+[data-theme="dark"] .paletteSwatches span {
+  border-color: rgba(255, 255, 255, 0.14);
 }
