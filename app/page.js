@@ -7,181 +7,8 @@ import { normalizeData } from "../lib/normalize";
 const fallbackRawData = {
   ok: true,
   syncedAt: null,
-  mainDatabase: [
-    {
-      id: "brot",
-      title: "Brot",
-      properties: {
-        Level: { type: "number", number: 2 },
-        XP: { type: "number", number: 3 },
-        MaxPreis: { type: "number", number: 21 },
-        "Produktionszeit Minuten": { type: "number", number: 4 },
-        Gebäude: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Bäckerei" }]
-        },
-        Typ: {
-          type: "select",
-          select: { name: "Produktionsgebäude" }
-        }
-      }
-    },
-    {
-      id: "kaese",
-      title: "Käse",
-      properties: {
-        Level: { type: "number", number: 12 },
-        XP: { type: "number", number: 15 },
-        MaxPreis: { type: "number", number: 122 },
-        "Produktionszeit Minuten": { type: "number", number: 51 },
-        Gebäude: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Molkerei" }]
-        },
-        Typ: {
-          type: "select",
-          select: { name: "Produktionsgebäude" }
-        }
-      }
-    },
-    {
-      id: "pizza",
-      title: "Pizza",
-      properties: {
-        Level: { type: "number", number: 33 },
-        XP: { type: "number", number: 23 },
-        MaxPreis: { type: "number", number: 190 },
-        "Produktionszeit Minuten": { type: "number", number: 12 },
-        Gebäude: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Bäckerei" }]
-        },
-        Typ: {
-          type: "select",
-          select: { name: "Produktionsgebäude" }
-        }
-      }
-    },
-    {
-      id: "weizen",
-      title: "Weizen",
-      properties: {
-        Level: { type: "number", number: 1 },
-        XP: { type: "number", number: 1 },
-        MaxPreis: { type: "number", number: 3.6 },
-        "Produktionszeit Minuten": { type: "number", number: 2 },
-        Typ: {
-          type: "select",
-          select: { name: "Feld" }
-        }
-      }
-    },
-    {
-      id: "milch",
-      title: "Milch",
-      properties: {
-        Level: { type: "number", number: 6 },
-        XP: { type: "number", number: 3 },
-        MaxPreis: { type: "number", number: 32 },
-        "Produktionszeit Minuten": { type: "number", number: 60 },
-        Typ: {
-          type: "select",
-          select: { name: "Tiergehege" }
-        }
-      }
-    },
-    {
-      id: "tomate",
-      title: "Tomate",
-      properties: {
-        Level: { type: "number", number: 30 },
-        XP: { type: "number", number: 8 },
-        MaxPreis: { type: "number", number: 43.2 },
-        "Produktionszeit Minuten": { type: "number", number: 360 },
-        Typ: {
-          type: "select",
-          select: { name: "Feld" }
-        }
-      }
-    }
-  ],
-  recipeDatabase: [
-    {
-      id: "pizza-weizen",
-      title: "Pizza – Weizen",
-      properties: {
-        Produkt: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Pizza" }]
-        },
-        Zutat: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Weizen" }]
-        },
-        Menge: { type: "number", number: 2 }
-      }
-    },
-    {
-      id: "pizza-kaese",
-      title: "Pizza – Käse",
-      properties: {
-        Produkt: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Pizza" }]
-        },
-        Zutat: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Käse" }]
-        },
-        Menge: { type: "number", number: 1 }
-      }
-    },
-    {
-      id: "pizza-tomate",
-      title: "Pizza – Tomate",
-      properties: {
-        Produkt: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Pizza" }]
-        },
-        Zutat: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Tomate" }]
-        },
-        Menge: { type: "number", number: 1 }
-      }
-    },
-    {
-      id: "kaese-milch",
-      title: "Käse – Milch",
-      properties: {
-        Produkt: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Käse" }]
-        },
-        Zutat: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Milch" }]
-        },
-        Menge: { type: "number", number: 3 }
-      }
-    },
-    {
-      id: "brot-weizen",
-      title: "Brot – Weizen",
-      properties: {
-        Produkt: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Brot" }]
-        },
-        Zutat: {
-          type: "rich_text",
-          rich_text: [{ plain_text: "Weizen" }]
-        },
-        Menge: { type: "number", number: 3 }
-      }
-    }
-  ]
+  mainDatabase: [],
+  recipeDatabase: []
 };
 
 const modes = [
@@ -225,10 +52,11 @@ export default function Home() {
   const [loadError, setLoadError] = useState("");
 
   const [mode, setMode] = useState("");
-  const [level, setLevel] = useState(33);
+  const [level, setLevel] = useState(50);
   const [hours, setHours] = useState(8);
-  const [globalSlots, setGlobalSlots] = useState(5);
+  const [globalSlots, setGlobalSlots] = useState(4);
 
+  const [slotsByBuilding, setSlotsByBuilding] = useState({});
   const [intermediateMustBeProduced, setIntermediateMustBeProduced] = useState(false);
 
   const [excludedIngredientNames, setExcludedIngredientNames] = useState([]);
@@ -296,6 +124,18 @@ export default function Home() {
 
       return stillAvailable;
     });
+
+    setSlotsByBuilding((current) => {
+      const next = {};
+
+      for (const buildingName of availableBuildingNames) {
+        if (current[buildingName] !== undefined) {
+          next[buildingName] = current[buildingName];
+        }
+      }
+
+      return next;
+    });
   }, [availableBuildingNames, baseSettingsComplete, userChangedBuildings]);
 
   useEffect(() => {
@@ -306,6 +146,7 @@ export default function Home() {
     level,
     hours,
     globalSlots,
+    slotsByBuilding,
     intermediateMustBeProduced,
     excludedIngredientNames,
     allowedBuildings
@@ -321,11 +162,16 @@ export default function Home() {
       level: calculationSettings.level,
       hours: calculationSettings.hours,
       globalSlots: calculationSettings.globalSlots,
+      slotsByBuilding: calculationSettings.slotsByBuilding,
       allowedBuildings: calculationSettings.allowedBuildings,
       intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced,
       excludedIngredientNames: calculationSettings.excludedIngredientNames
     });
   }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
+
+  function getBuildingSlots(buildingName) {
+    return slotsByBuilding[buildingName] ?? globalSlots;
+  }
 
   function toggleBuilding(buildingName) {
     setUserChangedBuildings(true);
@@ -347,6 +193,21 @@ export default function Home() {
   function clearAllBuildings() {
     setUserChangedBuildings(true);
     setAllowedBuildings([]);
+  }
+
+  function updateBuildingSlots(buildingName, value) {
+    setSlotsByBuilding((current) => ({
+      ...current,
+      [buildingName]: Number(value)
+    }));
+  }
+
+  function resetBuildingSlots(buildingName) {
+    setSlotsByBuilding((current) => {
+      const next = { ...current };
+      delete next[buildingName];
+      return next;
+    });
   }
 
   function toggleExcludedIngredient(name) {
@@ -386,6 +247,7 @@ export default function Home() {
       level,
       hours,
       globalSlots,
+      slotsByBuilding,
       allowedBuildings,
       intermediateMustBeProduced,
       excludedIngredientNames
@@ -470,7 +332,7 @@ export default function Home() {
               </label>
 
               <label className="field compactField">
-                <span>Slots: {globalSlots}</span>
+                <span>Standard-Slots: {globalSlots}</span>
                 <input
                   type="range"
                   min="1"
@@ -602,21 +464,63 @@ export default function Home() {
                   <span>{allowedBuildings.length}/{availableBuildings.length} aktiv</span>
                 </div>
 
-                <div className="buildingChipGrid">
+                <div className="buildingChipGrid withSlotControls">
                   {availableBuildings.map((building) => {
                     const isAllowed = allowedBuildings.includes(building.name);
+                    const buildingSlots = getBuildingSlots(building.name);
+                    const hasCustomSlots = slotsByBuilding[building.name] !== undefined;
 
                     return (
-                      <button
+                      <div
                         key={building.name}
-                        type="button"
-                        className={isAllowed ? "buildingChip active" : "buildingChip"}
-                        onClick={() => toggleBuilding(building.name)}
-                        title={`ab Level ${building.level}`}
+                        className={
+                          isAllowed
+                            ? "buildingChipWrap active"
+                            : "buildingChipWrap"
+                        }
                       >
-                        <span>{building.name}</span>
-                        <small>Lv. {building.level}</small>
-                      </button>
+                        <button
+                          type="button"
+                          className={isAllowed ? "buildingChip active" : "buildingChip"}
+                          onClick={() => toggleBuilding(building.name)}
+                          title={`ab Level ${building.level}`}
+                        >
+                          <span>{building.name}</span>
+                          <small>
+                            Lv. {building.level}
+                            <br />
+                            <em>
+                              {buildingSlots} Slot{buildingSlots === 1 ? "" : "s"}
+                              {hasCustomSlots ? "" : " std."}
+                            </em>
+                          </small>
+                        </button>
+
+                        <div className="buildingSlotHover">
+                          <label>
+                            <span>{buildingSlots} Slots</span>
+                            <input
+                              type="range"
+                              min="1"
+                              max="10"
+                              step="1"
+                              value={buildingSlots}
+                              onChange={(event) =>
+                                updateBuildingSlots(building.name, event.target.value)
+                              }
+                            />
+                          </label>
+
+                          {hasCustomSlots && (
+                            <button
+                              type="button"
+                              onClick={() => resetBuildingSlots(building.name)}
+                            >
+                              Standard
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
