@@ -125,48 +125,50 @@ export default function AppearanceSettings() {
         <div className="panelStaticHeader">Optische Einstellungen</div>
 
         <div className="appearanceBody">
-          <section className="appearanceSection themeSection">
-            <h2>Theme</h2>
-            <div className="appearanceSegment">
-              {[
-                { id: "light", label: "Light" },
-                { id: "dark", label: "Dark" },
-                { id: "system", label: "System" }
-              ].map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  className={appearance.theme === theme.id ? "active" : ""}
-                  onClick={() => updateValue("theme", theme.id)}
-                >
-                  {theme.label}
-                </button>
-              ))}
-            </div>
+          <div className="appearanceToolbar">
+            <section className="appearanceSection themeTileSection">
+              <h2>Theme</h2>
 
-            <div className="tileSettingsInline">
-              <label className="checkbox compactCheckbox singleCheckbox">
-                <input
-                  type="checkbox"
-                  checked={appearance.showMeta}
-                  onChange={(event) => updateValue("showMeta", event.target.checked)}
-                />
-                Zusatzinfos
-              </label>
+              <div className="appearanceSegment">
+                {[
+                  { id: "light", label: "Light" },
+                  { id: "dark", label: "Dark" },
+                  { id: "system", label: "System" }
+                ].map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    className={appearance.theme === theme.id ? "active" : ""}
+                    onClick={() => updateValue("theme", theme.id)}
+                  >
+                    {theme.label}
+                  </button>
+                ))}
+              </div>
 
-              <label className="checkbox compactCheckbox singleCheckbox">
-                <input
-                  type="checkbox"
-                  checked={appearance.iconsOnly}
-                  onChange={(event) => updateValue("iconsOnly", event.target.checked)}
-                />
-                Nur Icons
-              </label>
-            </div>
-          </section>
+              <h2>Kachel-Optionen</h2>
+              <div className="tileSettingsInline">
+                <label className="checkbox compactCheckbox singleCheckbox">
+                  <input
+                    type="checkbox"
+                    checked={appearance.showMeta}
+                    onChange={(event) => updateValue("showMeta", event.target.checked)}
+                  />
+                  Zusatzinfos
+                </label>
 
-          <div className="appearanceMainGrid">
-            <section className="appearanceSection">
+                <label className="checkbox compactCheckbox singleCheckbox">
+                  <input
+                    type="checkbox"
+                    checked={appearance.iconsOnly}
+                    onChange={(event) => updateValue("iconsOnly", event.target.checked)}
+                  />
+                  Nur Icons
+                </label>
+              </div>
+            </section>
+
+            <section className="appearanceSection appearanceSizingSection">
               <h2>Darstellung</h2>
 
               <label className="field compactField">
