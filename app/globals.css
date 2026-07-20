@@ -394,16 +394,6 @@ select:focus {
   gap: 6px;
 }
 
-.excludedInputRow input {
-  min-height: 34px;
-  padding: 7px 9px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-strong);
-  color: var(--text);
-  font-size: 12px;
-}
-
 .excludedInputRow button {
   min-height: 34px;
   border: 1px solid var(--border);
@@ -473,69 +463,82 @@ select:focus {
   text-align: right;
 }
 
-.buildingChipGrid {
+/* Gebäude mit kleineren einheitlichen Icons */
+
+.buildingVisualGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: 7px;
-  max-height: 390px;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 8px;
+  max-height: 430px;
   overflow: auto;
   padding-right: 3px;
 }
 
-.buildingChipGrid::-webkit-scrollbar {
+.buildingVisualGrid::-webkit-scrollbar {
   width: 8px;
 }
 
-.buildingChipGrid::-webkit-scrollbar-thumb {
+.buildingVisualGrid::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: var(--border-warm);
 }
 
-.buildingChipWrap {
+.buildingVisualCard {
   position: relative;
   min-width: 0;
 }
 
-.buildingChip {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
+.buildingVisualButton {
+  display: grid;
+  justify-items: center;
   width: 100%;
-  min-height: 48px;
-  padding: 8px 10px;
+  min-height: 96px;
+  padding: 8px 6px;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: 14px;
   background: var(--surface-strong);
   color: var(--text);
-  text-align: left;
+  text-align: center;
 }
 
-.buildingChip span {
+.buildingVisualCard.active .buildingVisualButton {
+  border-color: rgba(70, 161, 113, 0.45);
+  background: var(--green-soft);
+}
+
+.buildingVisualIcon {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 5px;
+  object-fit: contain;
+  border-radius: 9px;
+}
+
+.buildingVisualIcon.fallback {
+  display: grid;
+  place-items: center;
+  background: rgba(70, 161, 113, 0.12);
+  color: var(--green);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.buildingVisualName {
+  width: 100%;
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 800;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.12;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.buildingChip small {
-  flex: 0 0 auto;
+.buildingVisualMeta {
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.15;
-  text-align: right;
-}
-
-.buildingChip small em {
-  color: #9b9791;
-  font-style: normal;
-  font-weight: 650;
-}
-
-.buildingChip.active {
-  border-color: rgba(70, 161, 113, 0.45);
-  background: var(--green-soft);
+  font-size: 9px;
+  line-height: 1.12;
 }
 
 .buildingSlotHover {
@@ -553,8 +556,8 @@ select:focus {
   box-shadow: var(--shadow);
 }
 
-.buildingChipWrap:hover .buildingSlotHover,
-.buildingChipWrap:focus-within .buildingSlotHover {
+.buildingVisualCard:hover .buildingSlotHover,
+.buildingVisualCard:focus-within .buildingSlotHover {
   display: grid;
 }
 
@@ -649,18 +652,20 @@ select:focus {
   margin-bottom: 16px;
 }
 
-.compactProductionGrid {
+/* Produkt- und Zutatenliste mit kleinen einheitlichen Icons */
+
+.visualProductionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
   margin-top: 14px;
 }
 
-.compactGroup {
+.visualGroup {
   min-width: 0;
 }
 
-.compactGroup h3 {
+.visualGroup h3 {
   margin-bottom: 7px;
   color: var(--muted);
   font-size: 12px;
@@ -669,48 +674,69 @@ select:focus {
   letter-spacing: 0.04em;
 }
 
-.itemList {
+.visualItemGrid {
   display: grid;
-  gap: 6px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+  gap: 8px;
 }
 
-.itemList li {
+.visualItemGrid.standalone {
+  margin-top: 14px;
+}
+
+.visualItem {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 9px;
-  align-items: center;
-  min-height: 48px;
-  padding: 8px 9px;
+  justify-items: center;
+  min-height: 112px;
+  padding: 8px 6px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface-strong);
+  text-align: center;
 }
 
-.itemList strong,
-.itemList small {
-  display: block;
+.visualIcon,
+.visualIcon.large {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  object-fit: contain;
+  border-radius: 9px;
 }
 
-.itemList strong {
-  overflow: hidden;
+.visualIcon.fallback,
+.visualIcon.large.fallback {
+  display: grid;
+  place-items: center;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.visualItem strong {
   color: var(--text);
   font-size: 13px;
-  line-height: 1.25;
+  line-height: 1;
+}
+
+.visualItem span {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.12;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.itemList small {
-  margin-top: 2px;
-  overflow: hidden;
+.visualItem small {
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 9px;
+  line-height: 1.18;
 }
 
 .intermediateItem {
@@ -718,11 +744,18 @@ select:focus {
   border-color: rgba(39, 131, 222, 0.24) !important;
 }
 
+.ingredientItem {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+/* alte Icon-Klassen sicher angleichen */
+
 .iconFallback,
 .iconImage {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
+  object-fit: contain;
   border-radius: 9px;
 }
 
@@ -731,12 +764,11 @@ select:focus {
   place-items: center;
   background: var(--green-soft);
   color: var(--green);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 850;
 }
 
 .iconImage {
-  object-fit: cover;
   border: 1px solid var(--border);
   background: var(--surface-soft);
 }
@@ -775,7 +807,7 @@ select:focus {
     max-width: none;
   }
 
-  .buildingChipGrid {
+  .buildingVisualGrid {
     max-height: none;
     overflow: visible;
     padding-right: 0;
@@ -808,11 +840,16 @@ select:focus {
     text-align: left;
   }
 
-  .compactProductionGrid {
+  .visualProductionGrid {
     grid-template-columns: 1fr;
   }
 
   .excludedQuickGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .buildingVisualGrid,
+  .visualItemGrid {
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   }
 }
