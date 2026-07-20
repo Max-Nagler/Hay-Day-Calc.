@@ -533,7 +533,7 @@ select:focus {
 .buildingVisualGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 4px 7px;
+  gap: 8px 7px;
   max-height: 430px;
   overflow: auto;
   padding-right: 3px;
@@ -542,7 +542,7 @@ select:focus {
 .equalBuildingsGrid {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 548px;
+  max-height: none;
   overflow-y: auto;
   overflow-x: hidden;
   align-content: start;
@@ -563,7 +563,6 @@ select:focus {
 .buildingVisualCard {
   position: relative;
   min-width: 0;
-  padding-bottom: 42px;
 }
 
 .buildingVisualButton {
@@ -621,10 +620,10 @@ select:focus {
 
 .buildingSlotHover {
   position: absolute;
-  z-index: 5;
+  z-index: 20;
   right: 0;
   left: 0;
-  top: calc(100% - 39px);
+  top: calc(100% + 6px);
   display: grid;
   gap: 5px;
   min-height: 40px;
@@ -838,9 +837,10 @@ select:focus {
   z-index: 9999;
   display: grid;
   gap: 7px;
-  min-width: 138px;
+  min-width: 0;
+  width: max-content;
   max-width: 230px;
-  padding: 9px;
+  padding: 8px;
   border: 1px solid var(--border-warm);
   border-radius: 13px;
   background: rgba(255, 250, 240, 0.98);
@@ -864,6 +864,14 @@ select:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.floatingIngredientGrid:has(.floatingIngredientItem:only-child) {
+  justify-content: center;
+}
+
+.floatingIngredientGrid:has(.floatingIngredientItem:only-child) .floatingIngredientItem {
+  width: 48px;
 }
 
 .floatingIngredientItem {
