@@ -640,4 +640,15 @@ select:focus {
   .compactProductionGrid {
     grid-template-columns: 1fr;
   }
+  
+  .singleCheckbox {
+  grid-template-columns: auto 1fr;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  }
+
+  .intermediateItem {
+    background: var(--blue-soft) !important;
+    border-color: rgba(39, 131, 222, 0.24) !important;
+  }  
 }
