@@ -342,17 +342,26 @@ export default function Home() {
     });
   }, [availableBuildingNames, baseSettingsComplete, userChangedBuildings]);
 
+  function updateSettingsColumnHeight() {
+    const node = settingsColumnRef.current;
+    if (!node) return;
+
+    setSettingsColumnHeight(node.getBoundingClientRect().height);
+  }
+
+  function scheduleSettingsColumnHeightUpdate() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updateSettingsColumnHeight);
+    });
+  }
+
   useLayoutEffect(() => {
     const node = settingsColumnRef.current;
     if (!node) return;
 
-    function updateHeight() {
-      setSettingsColumnHeight(node.getBoundingClientRect().height);
-    }
+    updateSettingsColumnHeight();
 
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
+    const observer = new ResizeObserver(updateSettingsColumnHeight);
     observer.observe(node);
 
     return () => observer.disconnect();
@@ -557,7 +566,7 @@ export default function Home() {
 
       <section className="settingsGrid compactSettingsGrid equalSettingsGrid">
         <div className="settingsColumn" ref={settingsColumnRef}>
-          <details open className="panel compactPanel">
+          <details open className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
             <summary>Grunddaten</summary>
 
             <div className="modeSegment">
@@ -624,6 +633,7 @@ export default function Home() {
           <details
             open={baseSettingsComplete}
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
+            onToggle={scheduleSettingsColumnHeightUpdate}
           >
             <summary>Zusatzeinstellungen</summary>
 
@@ -644,6 +654,7 @@ export default function Home() {
           <details
             open={baseSettingsComplete}
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
+            onToggle={scheduleSettingsColumnHeightUpdate}
           >
             <summary>Zutaten ausschließen</summary>
 
