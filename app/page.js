@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import DashboardInsights from "./components/DashboardInsights";
+import "./components/dashboard.css";
 import { calculateProductionPlan, getAvailableBuildings } from "../lib/calculator";
 import { normalizeData } from "../lib/normalize";
 
@@ -1108,24 +1110,12 @@ export default function Home() {
 
       {result && (
         <div ref={outputRef}>
-          <section className="summaryGrid compactSummary belowSettings">
-            <div className="summaryCard">
-              <strong>{result.totals.products}</strong>
-              Produkte
-            </div>
-            <div className="summaryCard">
-              <strong>{Math.round(result.totals.coins)}</strong>
-              Coins
-            </div>
-            <div className="summaryCard">
-              <strong>{Math.round(result.totals.xp)}</strong>
-              XP
-            </div>
-            <div className="summaryCard">
-              <strong>{result.totals.buildings}</strong>
-              Gebäude
-            </div>
-          </section>
+          <DashboardInsights
+            result={result}
+            normalized={normalized}
+            calculationSettings={calculationSettings}
+            mode={calculationSettings.mode}
+          />
 
           <section className="output belowSettings">
             <details open className="panel compactPanel">
