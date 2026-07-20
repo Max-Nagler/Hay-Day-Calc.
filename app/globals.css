@@ -18,6 +18,8 @@
   --green-soft: #e8f1ec;
   --orange: #d5803b;
   --orange-soft: #fbebde;
+  --red: #e56458;
+  --red-soft: #fce9e7;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 22px rgba(77, 55, 27, 0.055);
 }
 
@@ -52,13 +54,19 @@ input:disabled {
   opacity: 0.55;
 }
 
+input,
+select {
+  color: var(--text);
+}
+
 .shell {
   width: min(1180px, 100%);
   margin: 0 auto;
   padding: 22px;
 }
 
-.compactHero {
+.compactHero,
+.hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
@@ -87,6 +95,11 @@ h1 {
   font-size: clamp(30px, 4vw, 44px);
   line-height: 1;
   letter-spacing: -0.045em;
+}
+
+h2 {
+  margin-bottom: 14px;
+  font-size: 17px;
 }
 
 h3 {
@@ -145,7 +158,10 @@ h3 {
   box-shadow: 0 0 0 4px var(--orange-soft);
 }
 
-.settingsGrid {
+/* Layout */
+
+.settingsGrid,
+.compactSettingsGrid {
   display: grid;
   grid-template-columns: minmax(300px, 390px) minmax(320px, 1fr);
   gap: 12px;
@@ -158,6 +174,8 @@ h3 {
   gap: 12px;
   min-width: 0;
 }
+
+/* Panels / Toggles */
 
 .panel {
   border: 1px solid var(--border-warm);
@@ -223,7 +241,7 @@ details.panel > *:last-child {
   margin-bottom: 16px;
 }
 
-/* compact mode selector */
+/* Rechenmodus */
 
 .modeSegment {
   display: grid;
@@ -257,7 +275,7 @@ details.panel > *:last-child {
   background: var(--surface-soft);
 }
 
-/* compact fields */
+/* Felder / Slider */
 
 .field {
   display: grid;
@@ -283,6 +301,19 @@ input[type="range"] {
   accent-color: var(--green);
 }
 
+input[type="number"],
+input[type="text"],
+select {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 12px;
+}
+
 input:focus,
 button:focus-visible,
 select:focus {
@@ -290,15 +321,7 @@ select:focus {
   outline-offset: 2px;
 }
 
-/* compact checkboxes */
-
-.compactCheckboxGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 12px;
-  margin-bottom: 12px;
-}
+/* Checkbox */
 
 .checkbox {
   display: grid;
@@ -319,6 +342,109 @@ select:focus {
   accent-color: var(--green);
 }
 
+.singleCheckbox {
+  grid-template-columns: auto 1fr;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* Zutaten ausschließen */
+
+.excludedBox {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.excludedHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.excludedHeader strong {
+  font-size: 13px;
+}
+
+.excludedHeader small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.excludedQuickGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 6px;
+}
+
+.excludedChip {
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.excludedChip.active {
+  border-color: rgba(229, 100, 88, 0.35);
+  background: var(--red-soft);
+  color: #9e332b;
+}
+
+.excludedInputRow {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  gap: 6px;
+}
+
+.excludedInputRow input {
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.excludedInputRow button {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.activeExcludedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.activeExcludedList button {
+  min-height: 25px;
+  padding: 4px 7px;
+  border: 1px solid rgba(229, 100, 88, 0.28);
+  border-radius: 999px;
+  background: var(--red-soft);
+  color: #9e332b;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+/* Button */
+
 .calculateButton {
   width: 100%;
   min-height: 42px;
@@ -336,7 +462,7 @@ select:focus {
   transform: translateY(-1px);
 }
 
-/* compact buildings */
+/* Gebäude */
 
 .buildingActions {
   display: grid;
@@ -414,6 +540,8 @@ select:focus {
   background: var(--green-soft);
 }
 
+/* Hilfstexte */
+
 .helperText {
   color: var(--muted);
   font-size: 12px;
@@ -433,7 +561,7 @@ select:focus {
   line-height: 1.4;
 }
 
-/* summary */
+/* Summary */
 
 .belowSettings {
   margin-top: 12px;
@@ -468,7 +596,7 @@ select:focus {
   letter-spacing: -0.03em;
 }
 
-/* compact output */
+/* Ausgabe */
 
 .output.belowSettings {
   display: grid;
@@ -548,6 +676,13 @@ select:focus {
   white-space: nowrap;
 }
 
+.intermediateItem {
+  background: var(--blue-soft) !important;
+  border-color: rgba(39, 131, 222, 0.24) !important;
+}
+
+/* Icons */
+
 .iconFallback,
 .iconImage {
   width: 30px;
@@ -571,6 +706,8 @@ select:focus {
   background: var(--surface-soft);
 }
 
+/* Warnungen */
+
 .warnings {
   padding: 12px 14px;
   border: 1px solid rgba(213, 128, 59, 0.25);
@@ -588,13 +725,17 @@ select:focus {
   margin-top: 5px;
 }
 
+/* Mobile */
+
 @media (max-width: 960px) {
   .shell {
     padding: 18px;
   }
 
   .compactHero,
-  .settingsGrid {
+  .hero,
+  .settingsGrid,
+  .compactSettingsGrid {
     grid-template-columns: 1fr;
   }
 
@@ -623,8 +764,7 @@ select:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dualRange,
-  .compactCheckboxGrid {
+  .dualRange {
     grid-template-columns: 1fr;
   }
 
@@ -640,15 +780,8 @@ select:focus {
   .compactProductionGrid {
     grid-template-columns: 1fr;
   }
-  
-  .singleCheckbox {
-  grid-template-columns: auto 1fr;
-  margin-top: 12px;
-  margin-bottom: 12px;
-  }
 
-  .intermediateItem {
-    background: var(--blue-soft) !important;
-    border-color: rgba(39, 131, 222, 0.24) !important;
-  }  
+  .excludedQuickGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
