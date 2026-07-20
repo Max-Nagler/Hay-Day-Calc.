@@ -18,19 +18,18 @@ const modes = [
 ];
 
 const colorPalettes = [
-  { id: "hay", colors: ["#f7f3e8", "#fffaf0", "#46a171", "#2783de", "#d5803b"] },
-  { id: "mono", colors: ["#f4f4f4", "#ffffff", "#8a8a8a", "#3f3f3f", "#111111"] },
-  { id: "berry", colors: ["#f8d8f1", "#fff0fb", "#bf55bf", "#7b1f73", "#4b124a"] },
-  { id: "ocean", colors: ["#d9f4ff", "#eefaff", "#18a0ce", "#0d5b78", "#0a3445"] },
-  { id: "forest", colors: ["#d8f3d0", "#f1ffed", "#46a171", "#2d7a20", "#163f14"] },
-  { id: "sunset", colors: ["#fff0e3", "#fff8f1", "#ed6d2f", "#c64e12", "#7f2e0b"] }
+  { id: "hay", colors: ["#f7f3e8", "#fffaf0", "#46a171", "#2783de", "#d5803b", "#e9c46a"] },
+  { id: "mono", colors: ["#f4f4f4", "#ffffff", "#8a8a8a", "#3f3f3f", "#111111", "#ffffff"] },
+  { id: "berry", colors: ["#f8d8f1", "#fff0fb", "#bf55bf", "#7b1f73", "#4b124a", "#f2b5d4"] },
+  { id: "ocean", colors: ["#d9f4ff", "#eefaff", "#18a0ce", "#0d5b78", "#0a3445", "#54d6c6"] },
+  { id: "forest", colors: ["#d8f3d0", "#f1ffed", "#46a171", "#2d7a20", "#163f14", "#b6d957"] },
+  { id: "sunset", colors: ["#fff0e3", "#fff8f1", "#ed6d2f", "#c64e12", "#7f2e0b", "#ffd166"] }
 ];
 
 const paletteById = new Map(colorPalettes.map((palette) => [palette.id, palette]));
 
 const defaultAppearance = {
   theme: "system",
-  compactMode: true,
   cardScale: 100,
   textScale: 100,
   iconScale: 100,
@@ -113,6 +112,7 @@ function applyAppearance(appearance) {
   document.documentElement.style.setProperty("--green", palette.colors[2]);
   document.documentElement.style.setProperty("--blue", palette.colors[3]);
   document.documentElement.style.setProperty("--orange", palette.colors[4]);
+  document.documentElement.style.setProperty("--accent-extra", palette.colors[5]);
   document.documentElement.style.setProperty("--green-soft", colorMix(palette.colors[2], surfaceStrong, isDark ? 0.24 : 0.14));
   document.documentElement.style.setProperty("--blue-soft", colorMix(palette.colors[3], surfaceStrong, isDark ? 0.24 : 0.14));
   document.documentElement.style.setProperty("--orange-soft", colorMix(palette.colors[4], surfaceStrong, isDark ? 0.24 : 0.14));
@@ -753,13 +753,7 @@ export default function Home() {
   }
 
   return (
-    <main
-      className={
-        appearance.compactMode
-          ? "shell compactShell appearanceCompact"
-          : "shell compactShell"
-      }
-    >
+    <main className="shell compactShell">
       <IngredientFloatingOverlay hover={hoverIngredients} />
 
       <section className="hero compactHero">
