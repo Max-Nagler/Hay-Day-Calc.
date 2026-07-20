@@ -51,6 +51,7 @@ button {
 button:disabled,
 input:disabled {
   cursor: not-allowed;
+  opacity: 0.55;
 }
 
 input,
@@ -154,18 +155,18 @@ h3 {
   box-shadow: 0 0 0 5px var(--orange-soft);
 }
 
-.layout {
+.settingsGrid {
   display: grid;
-  grid-template-columns: 380px minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 420px) minmax(320px, 1fr);
   gap: 16px;
   align-items: start;
 }
 
-.settings {
+.settingsColumn,
+.buildingsColumn {
   display: grid;
   gap: 16px;
-  position: sticky;
-  top: 20px;
+  min-width: 0;
 }
 
 .panel {
@@ -177,8 +178,8 @@ h3 {
 }
 
 .panel.disabled {
-  opacity: 0.52;
-  filter: grayscale(0.2);
+  opacity: 0.55;
+  filter: grayscale(0.15);
 }
 
 details.panel {
@@ -332,7 +333,7 @@ select:focus {
   font-weight: 750;
 }
 
-.stepperButton:hover {
+.stepperButton:hover:not(:disabled) {
   background: var(--surface-soft);
 }
 
@@ -356,9 +357,72 @@ select:focus {
   accent-color: var(--green);
 }
 
+.calculateButton {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  border: 1px solid rgba(70, 161, 113, 0.35);
+  border-radius: 14px;
+  background: var(--green);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(70, 161, 113, 0.18);
+}
+
+.calculateButton:hover:not(:disabled) {
+  filter: brightness(0.98);
+  transform: translateY(-1px);
+}
+
+.buildingActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+  margin-bottom: 12px;
+}
+
+.buildingActions button {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.buildingActions button:hover {
+  background: var(--surface-soft);
+}
+
+.helperText {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.inlineHelper {
+  margin-top: 4px;
+  margin-bottom: 18px;
+}
+
 .buildingList {
   display: grid;
   gap: 10px;
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.buildingList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.buildingList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-warm);
 }
 
 .buildingCard {
@@ -396,19 +460,15 @@ select:focus {
   font-size: 12px;
 }
 
-.buildingCard label {
-  display: grid;
-  gap: 6px;
+.buildingHint {
+  margin: 0;
   padding: 0 12px 12px 52px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 700;
 }
 
-.output {
-  display: grid;
-  gap: 16px;
-  min-width: 0;
+.belowSettings {
+  margin-top: 16px;
 }
 
 .summaryGrid {
@@ -438,6 +498,26 @@ select:focus {
   font-size: 28px;
   line-height: 1;
   letter-spacing: -0.03em;
+}
+
+.output.belowSettings {
+  display: grid;
+  gap: 16px;
+}
+
+.output.belowSettings details.panel > *:not(summary) {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+
+.output.belowSettings details.panel > *:last-child {
+  margin-bottom: 22px;
+}
+
+.output.belowSettings .productionGroups,
+.output.belowSettings .ingredientGroups,
+.output.belowSettings .itemList {
+  margin-top: 18px;
 }
 
 .productionGroups,
@@ -529,7 +609,8 @@ select:focus {
 }
 
 .empty {
-  margin-bottom: 0;
+  margin-top: 18px;
+  margin-bottom: 18px;
   color: var(--muted);
   line-height: 1.5;
 }
@@ -557,17 +638,19 @@ select:focus {
   }
 
   .hero,
-  .layout {
+  .settingsGrid {
     grid-template-columns: 1fr;
-  }
-
-  .settings {
-    position: static;
   }
 
   .syncBox {
     min-width: 0;
     max-width: none;
+  }
+
+  .buildingList {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 }
 
@@ -608,40 +691,5 @@ select:focus {
 
   details.panel > *:last-child {
     margin-bottom: 18px;
-  }
-
-    .buildingActions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 18px 22px 12px;
-  }
-
-  .buildingActions button {
-    min-height: 38px;
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    background: var(--surface-strong);
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 750;
-  }
-
-  .buildingActions button:hover {
-    background: var(--surface-soft);
-  }
-
-  .helperText {
-    margin: 0 22px 14px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.4;
-  }
-
-  .buildingHint {
-    margin: 0;
-    padding: 0 12px 12px 52px;
-    color: var(--muted);
-    font-size: 12px;
   }
 }
