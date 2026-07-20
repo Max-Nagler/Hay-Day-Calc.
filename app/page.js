@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateProductionPlan, getAvailableBuildings } from "../lib/calculator";
 import { normalizeData } from "../lib/normalize";
 
@@ -17,17 +17,9 @@ const modes = [
   { id: "slots", label: "Slots" }
 ];
 
-const specialExcludedNames = [
-  "Fischfilet",
-  "Hummerschwanz",
-  "Entenfeder"
-];
+const specialExcludedNames = ["Fischfilet", "Hummerschwanz", "Entenfeder"];
 
-const specialExcludedBuildings = [
-  "Mine",
-  "Schmelzofen",
-  "Honigschleuder"
-];
+const specialExcludedBuildings = ["Mine", "Schmelzofen", "Honigschleuder"];
 
 function formatMinutes(minutes) {
   if (!minutes) return "0 min";
@@ -162,6 +154,8 @@ function IngredientFloatingOverlay({ hover }) {
 }
 
 export default function Home() {
+  const outputRef = useRef(null);
+
   const [rawData, setRawData] = useState(fallbackRawData);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -331,12 +325,18 @@ export default function Home() {
       intermediateMustBeProduced: calculationSettings.intermediateMustBeProduced,
       excludedIngredientNames: calculationSettings.excludedIngredientNames
     });
-  }, [
-    normalized.products,
-    normalized.recipes,
-    calculationStarted,
-    calculationSettings
-  ]);
+  }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
+
+  useEffect(() => {
+    if (!result) return;
+
+    requestAnimationFrame(() => {
+      outputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    });
+  }, [result]);
 
   function getBuildingSlots(buildingName) {
     return slotsByBuilding[buildingName] ?? defaultSlotsByBuilding[buildingName] ?? globalSlots;
@@ -550,100 +550,115 @@ export default function Home() {
             open={baseSettingsComplete}
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
           >
-            <summary>Zusätzliche Einstellungen</summary>
+            <summary>Zusatzeinstellungen</summary>
 
             {!baseSettingsComplete ? (
               <p className="empty">Wird nach den Grunddaten freigeschaltet.</p>
             ) : (
-              <>
-                <label className="checkbox compactCheckbox singleCheckbox">
-                  <input
-                    type="checkbox"
-                    checked={intermediateMustBeProduced}
-                    onChange={(event) => setIntermediateMustBeProduced(event.target.checked)}
-                  />
-                  Zwischenprodukte müssen hergestellt werden
-                </label>
-
-                <div className="excludedBox">
-                  <div className="excludedHeader">
-                    <strong>Produkte ausschließen</strong>
-                    <small>{excludedIngredientNames.length} aktiv</small>
-                  </div>
-
-                  <div className="excludedSmartGrid">
-                    {selectableExcludedProducts.map((product) => {
-                      const active = excludedIngredientNames.includes(product.name);
-
-                      return (
-                        <button
-                          key={product.key}
-                          type="button"
-                          className={active ? "excludedSmartChip active" : "excludedSmartChip"}
-                          onClick={() => toggleExcludedIngredient(product.name)}
-                        >
-                          <ProductIcon item={product} />
-                          <span>{product.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="excludedInputRow">
-                    <input
-                      type="text"
-                      placeholder="Weitere Zutat"
-                      value={customExcludedIngredient}
-                      onChange={(event) => setCustomExcludedIngredient(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          addCustomExcludedIngredient();
-                        }
-                      }}
-                    />
-                    <button type="button" onClick={addCustomExcludedIngredient}>
-                      +
-                    </button>
-                  </div>
-
-                  {excludedIngredientNames.length > 0 && (
-                    <div className="activeExcludedList">
-                      {excludedIngredientNames.map((ingredient) => (
-                        <button
-                          key={ingredient}
-                          type="button"
-                          onClick={() => removeExcludedIngredient(ingredient)}
-                          title="Entfernen"
-                        >
-                          {ingredient} ×
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  className="calculateButton"
-                  onClick={startCalculation}
-                  disabled={allowedBuildings.length === 0}
-                >
-                  Berechnung starten
-                </button>
-
-                {allowedBuildings.length === 0 && (
-                  <p className="helperText inlineHelper">
-                    Wähle mindestens ein Gebäude aus.
-                  </p>
-                )}
-              </>
+              <label className="checkbox compactCheckbox singleCheckbox">
+                <input
+                  type="checkbox"
+                  checked={intermediateMustBeProduced}
+                  onChange={(event) => setIntermediateMustBeProduced(event.target.checked)}
+                />
+                Zwischenprodukte müssen hergestellt werden
+              </label>
             )}
           </details>
+
+          <details
+            open={baseSettingsComplete}
+            className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
+          >
+            <summary>Produkte ausschließen</summary>
+
+            {!baseSettingsComplete ? (
+              <p className="empty">Wird nach den Grunddaten freigeschaltet.</p>
+            ) : (
+              <div className="excludedBox exclusionStandaloneBox">
+                <div className="excludedHeader">
+                  <strong>Ausgeschlossene Produkte</strong>
+                  <small>{excludedIngredientNames.length} aktiv</small>
+                </div>
+
+                <div className="excludedSmartGrid">
+                  {selectableExcludedProducts.map((product) => {
+                    const active = excludedIngredientNames.includes(product.name);
+
+                    return (
+                      <button
+                        key={product.key}
+                        type="button"
+                        className={active ? "excludedSmartChip active" : "excludedSmartChip"}
+                        onClick={() => toggleExcludedIngredient(product.name)}
+                      >
+                        <ProductIcon item={product} />
+                        <span>{product.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="excludedInputRow">
+                  <input
+                    type="text"
+                    placeholder="Weitere Zutat"
+                    value={customExcludedIngredient}
+                    onChange={(event) => setCustomExcludedIngredient(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addCustomExcludedIngredient();
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={addCustomExcludedIngredient}>
+                    +
+                  </button>
+                </div>
+
+                {excludedIngredientNames.length > 0 && (
+                  <div className="activeExcludedList">
+                    {excludedIngredientNames.map((ingredient) => (
+                      <button
+                        key={ingredient}
+                        type="button"
+                        onClick={() => removeExcludedIngredient(ingredient)}
+                        title="Entfernen"
+                      >
+                        {ingredient} ×
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </details>
+
+          <button
+            type="button"
+            className="calculateButton compactCalculateButton"
+            onClick={startCalculation}
+            disabled={!baseSettingsComplete || allowedBuildings.length === 0}
+          >
+            Berechnung starten
+          </button>
+
+          {baseSettingsComplete && allowedBuildings.length === 0 && (
+            <p className="helperText inlineHelper">
+              Wähle mindestens ein Gebäude aus.
+            </p>
+          )}
         </div>
 
         <div className="buildingsColumn equalBuildingsColumn">
-          <section className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle" : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"}>
+          <section
+            className={
+              baseSettingsComplete
+                ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle"
+                : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"
+            }
+          >
             <div className="panelStaticHeader">Produktionsgebäude</div>
 
             {!baseSettingsComplete ? (
@@ -723,7 +738,7 @@ export default function Home() {
       </section>
 
       {result && (
-        <>
+        <div ref={outputRef}>
           <section className="summaryGrid compactSummary belowSettings">
             <div className="summaryCard">
               <strong>{result.totals.products}</strong>
@@ -744,7 +759,7 @@ export default function Home() {
           </section>
 
           <section className="output belowSettings">
-            <details className="panel compactPanel">
+            <details open className="panel compactPanel">
               <summary>Produktionsliste</summary>
 
               {result.productionByBuilding.length ? (
@@ -845,7 +860,7 @@ export default function Home() {
               </section>
             )}
           </section>
-        </>
+        </div>
       )}
     </main>
   );
