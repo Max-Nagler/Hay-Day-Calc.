@@ -623,6 +623,7 @@ function ProgressChart({ points, large = false }) {
         {points.map((point, index) => (
           <circle
             key={`${point.time}-${index}`}
+            className={point.role === "intermediate" ? "progressPoint intermediate" : "progressPoint"}
             cx={getX(point.time)}
             cy={getY(point.percent)}
             r={hoveredPoint === point ? 6 : 3.5}
