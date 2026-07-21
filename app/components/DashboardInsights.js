@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calculateProductionPlan } from "../../lib/calculator";
 
 const dashboardPages = [
@@ -37,7 +37,11 @@ function getDelta(nextValue, currentValue) {
   const next = Number(nextValue || 0);
   const delta = next - current;
   const percent = current > 0 ? (delta / current) * 100 : 0;
-  return { delta, percent };
+  return { delta, percent, next };
+}
+
+function getMetricTotal(result, mode) {
+  return mode === "xp" ? Number(result?.totals?.xp || 0) : Number(result?.totals?.coins || 0);
 }
 
 function getBuildingSlots(buildingName, settings) {
@@ -73,9 +77,7 @@ function calculateSlotHours(result) {
 function calculateEfficiency(result, mode) {
   const slotHours = calculateSlotHours(result);
   if (!slotHours) return 0;
-  return mode === "xp"
-    ? Number(result?.totals?.xp || 0) / slotHours
-    : Number(result?.totals?.coins || 0) / slotHours;
+  return getMetricTotal(result, mode) / slotHours;
 }
 
 function simulatePlan(settings, overrides = {}) {
@@ -106,7 +108,7 @@ function buildSimulationSettings({ normalized, calculationSettings }) {
   };
 }
 
-function buildHourComparison(result, settings, hoursToAdd) {
+function buildHourComparison(result, settings, hoursToAdd, mode) {
   if (!result || !settings) return null;
 
   const simulated = simulatePlan(settings, {
@@ -117,19 +119,20 @@ function buildHourComparison(result, settings, hoursToAdd) {
 
   return {
     hoursToAdd,
+    metric: getDelta(getMetricTotal(simulated, mode), getMetricTotal(result, mode)),
     products: getDelta(simulated.totals.products, result.totals.products),
     coins: getDelta(simulated.totals.coins, result.totals.coins),
     xp: getDelta(simulated.totals.xp, result.totals.xp)
   };
 }
 
-function buildComparisonRange(result, settings, start, end) {
+function buildComparisonRange(result, settings, start, end, mode) {
   const min = Math.min(start, end);
   const max = Math.max(start, end);
 
   return Array.from({ length: max - min + 1 }, (_, index) => min + index)
     .filter((hoursToAdd) => hoursToAdd !== 0)
-    .map((hoursToAdd) => buildHourComparison(result, settings, hoursToAdd))
+    .map((hoursToAdd) => buildHourComparison(result, settings, hoursToAdd, mode))
     .filter(Boolean);
 }
 
@@ -151,10 +154,7 @@ function buildBestSlotRecommendation(result, settings) {
       });
       if (!simulated) return null;
 
-      const metric =
-        settings.mode === "xp"
-          ? Number(simulated.totals.xp || 0) - Number(result.totals.xp || 0)
-          : Number(simulated.totals.coins || 0) - Number(result.totals.coins || 0);
+      const metric = getMetricTotal(simulated, settings.mode) - getMetricTotal(result, settings.mode);
 
       return {
         buildingName,
@@ -201,14 +201,35 @@ function buildBuildingUtilization(result, normalized) {
     if (!grouped.has(row.percent)) {
       grouped.set(row.percent, {
         percent: row.percent,
-        buildings: []
+        buildings: [],
+        usedSlots: 0,
+        availableSlots: 0
       });
     }
 
-    grouped.get(row.percent).buildings.push(row);
+    const group = grouped.get(row.percent);
+    group.buildings.push(row);
+    group.usedSlots += row.usedSlots;
+    group.availableSlots += row.availableSlots;
   }
 
   return Array.from(grouped.values()).sort((a, b) => b.percent - a.percent);
+}
+
+function buildUtilizationSummary(groups) {
+  const flatBuildings = groups.flatMap((group) => group.buildings);
+  const fullGroups = groups.filter((group) => group.percent >= 100);
+  const topGroup = groups[0];
+
+  return {
+    buildingCount: flatBuildings.length,
+    fullBuildingCount: fullGroups.reduce((total, group) => total + group.buildings.length, 0),
+    topPercent: topGroup?.percent || 0,
+    averagePercent:
+      flatBuildings.length > 0
+        ? flatBuildings.reduce((total, building) => total + building.percent, 0) / flatBuildings.length
+        : 0
+  };
 }
 
 function buildProgressCurve(result) {
@@ -284,58 +305,89 @@ function DeltaCard({ label, delta }) {
   );
 }
 
-function ComparisonChart({ comparisons }) {
+function ComparisonTooltip({ comparison, mode }) {
+  const metricLabel = mode === "xp" ? "XP" : "Coins";
+
+  return (
+    <div className="comparisonTooltipCard">
+      <h3>
+        {comparison.hoursToAdd > 0 ? "+" : ""}
+        {comparison.hoursToAdd} h
+      </h3>
+      <DeltaCard label={metricLabel} delta={comparison.metric} />
+      <DeltaCard label="Produkte" delta={comparison.products} />
+    </div>
+  );
+}
+
+function ComparisonChart({ comparisons, mode }) {
+  const [hoveredComparison, setHoveredComparison] = useState(null);
+
   if (!comparisons.length) return <p className="dashboardEmpty">Kein Vergleichsbereich gewählt.</p>;
 
-  const width = 520;
-  const height = 150;
-  const values = comparisons.map((item) => item.products.percent);
+  const width = 560;
+  const height = 190;
+  const padding = { top: 14, right: 18, bottom: 34, left: 54 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const values = comparisons.map((item) => item.metric.percent);
   const minX = Math.min(...comparisons.map((item) => item.hoursToAdd));
   const maxX = Math.max(...comparisons.map((item) => item.hoursToAdd));
   const minY = Math.min(...values, 0);
   const maxY = Math.max(...values, 0);
   const rangeX = Math.max(1, maxX - minX);
   const rangeY = Math.max(1, maxY - minY);
+  const yTicks = [minY, minY + rangeY / 2, maxY];
 
-  const getX = (value) => ((value - minX) / rangeX) * width;
-  const getY = (value) => height - ((value - minY) / rangeY) * height;
+  const getX = (value) => padding.left + ((value - minX) / rangeX) * chartWidth;
+  const getY = (value) => padding.top + chartHeight - ((value - minY) / rangeY) * chartHeight;
 
   const path = comparisons
-    .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(item.products.percent)}`)
+    .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(item.metric.percent)}`)
     .join(" ");
 
   return (
     <div className="dashboardChartBox comparisonChartBox">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Stundenvergleich">
-        <path className="dashboardChartGrid" d={`M 0 ${getY(0)} H ${width}`} />
-        <path className="dashboardChartLine" d={path} />
-        {comparisons.map((item) => (
-          <g key={item.hoursToAdd} className="comparisonPoint">
-            <circle cx={getX(item.hoursToAdd)} cy={getY(item.products.percent)} r="5" />
-            <title>
-              {item.hoursToAdd > 0 ? "+" : ""}
-              {item.hoursToAdd} h: {item.products.delta >= 0 ? "+" : ""}
-              {formatNumber(item.products.delta)} Produkte ({formatPercent(item.products.percent)})
-            </title>
+        {yTicks.map((tick) => (
+          <g key={tick}>
+            <path className="dashboardChartGrid" d={`M ${padding.left} ${getY(tick)} H ${width - padding.right}`} />
+            <text className="chartAxisText" x={padding.left - 8} y={getY(tick) + 4} textAnchor="end">
+              {formatPercent(tick)}
+            </text>
           </g>
         ))}
+        <path className="chartAxisLine" d={`M ${padding.left} ${padding.top} V ${height - padding.bottom} H ${width - padding.right}`} />
+        <text className="chartAxisLabel" x={padding.left + chartWidth / 2} y={height - 6} textAnchor="middle">
+          Stunden-Abweichung
+        </text>
+        <text className="chartAxisLabel" x="12" y={padding.top + chartHeight / 2} textAnchor="middle" transform={`rotate(-90 12 ${padding.top + chartHeight / 2})`}>
+          {mode === "xp" ? "XP" : "Coins"} in %
+        </text>
+        <path className="dashboardChartLine" d={path} />
+        {comparisons.map((item) => (
+          <circle
+            key={item.hoursToAdd}
+            cx={getX(item.hoursToAdd)}
+            cy={getY(item.metric.percent)}
+            r={hoveredComparison === item ? 7 : 5}
+            onMouseEnter={() => setHoveredComparison(item)}
+            onMouseLeave={() => setHoveredComparison(null)}
+          />
+        ))}
       </svg>
-      <div className="dashboardChartLegend">
-        <span>{minX > 0 ? "+" : ""}{minX} h</span>
-        <span>Produkte in %</span>
-        <span>{maxX > 0 ? "+" : ""}{maxX} h</span>
-      </div>
+      {hoveredComparison && <ComparisonTooltip comparison={hoveredComparison} mode={mode} />}
     </div>
   );
 }
 
-function ProgressChart({ points }) {
+function ProgressChart({ points, large = false }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
   if (!points.length) return <p className="dashboardEmpty">Noch keine Diagrammdaten.</p>;
 
-  const width = 520;
-  const height = 170;
+  const width = large ? 860 : 520;
+  const height = large ? 320 : 170;
   const maxTime = Math.max(...points.map((point) => point.time), 1);
   const getX = (time) => (time / maxTime) * width;
   const getY = (percent) => height - (percent / 100) * height;
@@ -345,7 +397,7 @@ function ProgressChart({ points }) {
     .join(" ");
 
   return (
-    <div className="dashboardChartBox progressChartBox">
+    <div className={large ? "dashboardChartBox progressChartBox large" : "dashboardChartBox progressChartBox"}>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Produktionsfortschritt">
         <path className="dashboardChartGrid" d={`M 0 ${height} H ${width}`} />
         <path className="dashboardChartLine" d={path} />
@@ -380,10 +432,7 @@ function ProgressChart({ points }) {
 }
 
 function BuildingIcon({ building }) {
-  if (building.iconUrl) {
-    return <img src={building.iconUrl} alt="" />;
-  }
-
+  if (building.iconUrl) return <img src={building.iconUrl} alt="" />;
   return <span>{building.building.slice(0, 1)}</span>;
 }
 
@@ -391,6 +440,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   const [activePage, setActivePage] = useState("overview");
   const [rangeStart, setRangeStart] = useState(-2);
   const [rangeEnd, setRangeEnd] = useState(2);
+  const [progressModalOpen, setProgressModalOpen] = useState(false);
 
   const settings = useMemo(
     () => buildSimulationSettings({ normalized, calculationSettings }),
@@ -398,18 +448,27 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   );
 
   const efficiency = useMemo(() => calculateEfficiency(result, mode), [result, mode]);
-
-  const fixedComparisons = useMemo(() => {
-    return [1, 2, 4].map((hoursToAdd) => buildHourComparison(result, settings, hoursToAdd)).filter(Boolean);
-  }, [result, settings]);
-
-  const rangeComparisons = useMemo(() => {
-    return buildComparisonRange(result, settings, Number(rangeStart || 0), Number(rangeEnd || 0));
-  }, [result, settings, rangeStart, rangeEnd]);
-
+  const rangeComparisons = useMemo(
+    () => buildComparisonRange(result, settings, Number(rangeStart || 0), Number(rangeEnd || 0), mode),
+    [result, settings, rangeStart, rangeEnd, mode]
+  );
   const slotRecommendation = useMemo(() => buildBestSlotRecommendation(result, settings), [result, settings]);
   const utilizationGroups = useMemo(() => buildBuildingUtilization(result, normalized), [result, normalized]);
+  const utilizationSummary = useMemo(() => buildUtilizationSummary(utilizationGroups), [utilizationGroups]);
   const progressCurve = useMemo(() => buildProgressCurve(result), [result]);
+
+  useEffect(() => {
+    if (!progressModalOpen) return;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setProgressModalOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [progressModalOpen]);
 
   if (!result || !calculationSettings) return null;
 
@@ -470,17 +529,6 @@ export default function DashboardInsights({ result, normalized, calculationSetti
 
       {activePage === "comparisons" && (
         <div className="dashboardPage">
-          <div className="dashboardDeltaGrid">
-            {fixedComparisons.map((comparison) => (
-              <article key={comparison.hoursToAdd} className="comparisonBundle">
-                <h3>+{comparison.hoursToAdd} h</h3>
-                <DeltaCard label="Produkte" delta={comparison.products} />
-                <DeltaCard label="Coins" delta={comparison.coins} />
-                <DeltaCard label="XP" delta={comparison.xp} />
-              </article>
-            ))}
-          </div>
-
           <article className="dashboardChartCard">
             <div className="comparisonRangeHeader">
               <h3>Stundenbereich</h3>
@@ -493,7 +541,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                 <input type="number" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} />
               </label>
             </div>
-            <ComparisonChart comparisons={rangeComparisons} />
+            <ComparisonChart comparisons={rangeComparisons} mode={mode} />
           </article>
         </div>
       )}
@@ -501,12 +549,22 @@ export default function DashboardInsights({ result, normalized, calculationSetti
       {activePage === "charts" && (
         <div className="dashboardPage dashboardChartsGrid">
           <article className="dashboardChartCard">
-            <h3>Produktionsfortschritt</h3>
+            <div className="dashboardChartTitleRow">
+              <h3>Produktionsfortschritt</h3>
+              <button type="button" onClick={() => setProgressModalOpen(true)}>
+                Groß öffnen
+              </button>
+            </div>
             <ProgressChart points={progressCurve} />
           </article>
 
           <article className="dashboardChartCard">
             <h3>Gebäude-Auslastung</h3>
+            <div className="buildingUtilizationKpis">
+              <KpiCard label="Gebäude" value={formatNumber(utilizationSummary.buildingCount)} />
+              <KpiCard label="Voll ausgelastet" value={formatNumber(utilizationSummary.fullBuildingCount)} />
+              <KpiCard label="Ø Auslastung" value={`${formatDecimal(utilizationSummary.averagePercent, 0)}%`} />
+            </div>
             <div className="utilizationIconGroups">
               {utilizationGroups.map((group) => (
                 <div key={group.percent} className="utilizationIconGroup">
@@ -522,6 +580,21 @@ export default function DashboardInsights({ result, normalized, calculationSetti
               ))}
             </div>
           </article>
+
+          {progressModalOpen && (
+            <div className="chartModalOverlay" role="dialog" aria-modal="true">
+              <div className="chartModal">
+                <div className="dashboardChartTitleRow">
+                  <h3>Produktionsfortschritt</h3>
+                  <button type="button" onClick={() => setProgressModalOpen(false)}>
+                    Schließen
+                  </button>
+                </div>
+                <ProgressChart points={progressCurve} large />
+                <p className="dashboardEmpty">Mit Esc schließen.</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>
