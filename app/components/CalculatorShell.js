@@ -10,6 +10,8 @@ export default function CalculatorShell({
   isLoading,
   loadError,
   syncedAt,
+  isRefreshing,
+  onRefreshData,
   children
 }) {
   return (
@@ -23,7 +25,13 @@ export default function CalculatorShell({
           </p>
         </div>
 
-        <DataStatus isLoading={isLoading} loadError={loadError} syncedAt={syncedAt} />
+        <DataStatus
+          isLoading={isLoading}
+          isRefreshing={isRefreshing}
+          loadError={loadError}
+          syncedAt={syncedAt}
+          onRefreshData={onRefreshData}
+        />
       </section>
 
       <section className="calculatorTabs panel compactPanel">
