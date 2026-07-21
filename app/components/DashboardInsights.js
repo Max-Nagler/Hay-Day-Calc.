@@ -297,26 +297,107 @@ function buildProgressCurve(result) {
   if (!entries.length || !totalProducts) return [];
 
   const events = [];
+  const producedTimesByKey = new Map();
+  const buildingAvailableAt = new Map();
+  const pendingEntries = [...entries].sort((a, b) => {
+    const roleOrder = (a.role === "intermediate" ? 0 : 1) - (b.role === "intermediate" ? 0 : 1);
+    return (
+      roleOrder ||
+      (a.product?.level || 0) - (b.product?.level || 0) ||
+      (a.product?.name || "").localeCompare(b.product?.name || "")
+    );
+  });
 
-  for (const entry of entries) {
+  function getDependencyKeys(entry) {
+    return Array.from(entry.productionRequirements?.keys?.() || entry.intermediateMap?.keys?.() || []);
+  }
+
+  function getDependencyReadyAt(entry) {
+    const dependencyKeys = getDependencyKeys(entry);
+    if (!dependencyKeys.length) return 0;
+
+    let readyAt = 0;
+
+    for (const key of dependencyKeys) {
+      const requiredAmount =
+        Number(entry.productionRequirements?.get?.(key) || entry.intermediateMap?.get?.(key) || 0);
+      const completionTimes = producedTimesByKey.get(key) || [];
+
+      if (completionTimes.length < requiredAmount) {
+        return null;
+      }
+
+      readyAt = Math.max(readyAt, completionTimes[requiredAmount - 1] || 0);
+    }
+
+    return readyAt;
+  }
+
+  function scheduleEntry(entry) {
     const amount = Number(entry.amount || 0);
-    if (amount <= 0) continue;
+    if (amount <= 0) return true;
 
-    const availableSlots = Math.max(1, Number(entry.slots || 1));
-    const usedSlots = Math.max(1, Math.min(availableSlots, Number(entry.slotsUsed || amount)));
-    const totalDurationMin = Number(entry.effectiveTimeMin || entry.ownTimeMin || 0);
+    const dependencyReadyAt = getDependencyReadyAt(entry);
+    if (dependencyReadyAt === null) return false;
+
+    const building = entry.building;
+    const totalDurationMin = Number(entry.ownTimeMin || entry.effectiveTimeMin || 0);
     const durationPerItemHours = Math.max(0.01, totalDurationMin / amount / 60);
+    let queueTimeHours = Math.max(buildingAvailableAt.get(building) || 0, dependencyReadyAt);
 
     for (let index = 1; index <= amount; index += 1) {
-      const batch = Math.ceil(index / usedSlots);
+      queueTimeHours += durationPerItemHours;
 
-      events.push({
-        time: batch * durationPerItemHours,
+      const event = {
+        time: queueTimeHours,
         amount: 1,
+        productKey: entry.product?.key || "",
         productName: entry.product?.name || "Produkt",
-        building: entry.building,
-        slotBatch: batch
-      });
+        building,
+        role: entry.role,
+        queuePosition: index,
+        dependencyReadyAt
+      };
+
+      events.push(event);
+
+      if (event.productKey) {
+        if (!producedTimesByKey.has(event.productKey)) {
+          producedTimesByKey.set(event.productKey, []);
+        }
+
+        producedTimesByKey.get(event.productKey).push(event.time);
+      }
+    }
+
+    buildingAvailableAt.set(building, queueTimeHours);
+    return true;
+  }
+
+  let safetyCounter = pendingEntries.length * 2;
+
+  while (pendingEntries.length && safetyCounter > 0) {
+    safetyCounter -= 1;
+    let scheduledAny = false;
+
+    for (let index = 0; index < pendingEntries.length; index += 1) {
+      const entry = pendingEntries[index];
+
+      if (scheduleEntry(entry)) {
+        pendingEntries.splice(index, 1);
+        index -= 1;
+        scheduledAny = true;
+      }
+    }
+
+    if (!scheduledAny) {
+      for (const entry of pendingEntries.splice(0)) {
+        scheduleEntry({
+          ...entry,
+          productionRequirements: new Map(),
+          intermediateMap: new Map()
+        });
+      }
     }
   }
 
