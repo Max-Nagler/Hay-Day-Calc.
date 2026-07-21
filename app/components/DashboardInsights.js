@@ -19,6 +19,15 @@ function formatNumber(value) {
   );
 }
 
+function formatAxisNumber(value) {
+  const number = Number(value || 0);
+  if (Math.abs(number) >= 1000) {
+    return `${formatDecimal(number / 1000, Math.abs(number) >= 10000 ? 0 : 1)}k`;
+  }
+
+  return formatNumber(number);
+}
+
 function formatDecimal(value, digits = 1) {
   return new Intl.NumberFormat("de-DE", {
     minimumFractionDigits: digits,
@@ -42,6 +51,25 @@ function getDelta(nextValue, currentValue) {
 
 function getMetricTotal(result, mode) {
   return mode === "xp" ? Number(result?.totals?.xp || 0) : Number(result?.totals?.coins || 0);
+}
+
+function getChartMetricValue(result, metric) {
+  if (metric === "xp") return Number(result?.totals?.xp || 0);
+  if (metric === "coinsPerSlotHour") return calculateEfficiency(result, "coins");
+  if (metric === "xpPerSlotHour") return calculateEfficiency(result, "xp");
+  return Number(result?.totals?.coins || 0);
+}
+
+function getChartMetricLabel(metric) {
+  if (metric === "xp") return "XP absolut";
+  if (metric === "coinsPerSlotHour") return "Coins/Slot-h";
+  if (metric === "xpPerSlotHour") return "XP/Slot-h";
+  return "Coins absolut";
+}
+
+function getChartMetricDeltaLabel(metric) {
+  if (metric === "xp" || metric === "xpPerSlotHour") return "XP";
+  return "Coins";
 }
 
 function getBuildingSlots(buildingName, settings) {
@@ -108,7 +136,7 @@ function buildSimulationSettings({ normalized, calculationSettings }) {
   };
 }
 
-function buildHourComparison(result, settings, hoursToAdd, mode) {
+function buildHourComparison(result, settings, hoursToAdd, mode, chartMetric = "coins") {
   if (!result || !settings) return null;
 
   const simulated = simulatePlan(settings, {
@@ -121,14 +149,16 @@ function buildHourComparison(result, settings, hoursToAdd, mode) {
     hoursToAdd,
     hours: Math.max(1, Number(settings.hours || 0) + hoursToAdd),
     slotHours: getDelta(calculateSlotHours(simulated), calculateSlotHours(result)),
-    metric: getDelta(getMetricTotal(simulated, mode), getMetricTotal(result, mode)),
+    metric: getDelta(getChartMetricValue(simulated, chartMetric), getChartMetricValue(result, chartMetric)),
     products: getDelta(simulated.totals.products, result.totals.products),
     coins: getDelta(simulated.totals.coins, result.totals.coins),
-    xp: getDelta(simulated.totals.xp, result.totals.xp)
+    xp: getDelta(simulated.totals.xp, result.totals.xp),
+    coinsPerSlotHour: getDelta(calculateEfficiency(simulated, "coins"), calculateEfficiency(result, "coins")),
+    xpPerSlotHour: getDelta(calculateEfficiency(simulated, "xp"), calculateEfficiency(result, "xp"))
   };
 }
 
-function buildComparisonRange(result, settings, start, end, mode) {
+function buildComparisonRange(result, settings, start, end, mode, chartMetric = "coins") {
   const min = Math.min(start, end);
   const max = Math.max(start, end);
 
@@ -139,13 +169,15 @@ function buildComparisonRange(result, settings, start, end, mode) {
             hoursToAdd: 0,
             hours: Number(settings?.hours || 0),
             slotHours: getDelta(calculateSlotHours(result), calculateSlotHours(result)),
-            metric: getDelta(getMetricTotal(result, mode), getMetricTotal(result, mode)),
+            metric: getDelta(getChartMetricValue(result, chartMetric), getChartMetricValue(result, chartMetric)),
             products: getDelta(result.totals.products, result.totals.products),
             coins: getDelta(result.totals.coins, result.totals.coins),
             xp: getDelta(result.totals.xp, result.totals.xp),
+            coinsPerSlotHour: getDelta(calculateEfficiency(result, "coins"), calculateEfficiency(result, "coins")),
+            xpPerSlotHour: getDelta(calculateEfficiency(result, "xp"), calculateEfficiency(result, "xp")),
             isCurrent: true
           }
-        : buildHourComparison(result, settings, hoursToAdd, mode)
+        : buildHourComparison(result, settings, hoursToAdd, mode, chartMetric)
     )
     .filter(Boolean);
 }
@@ -319,15 +351,19 @@ function DeltaCard({ label, delta }) {
   );
 }
 
-function ComparisonTooltip({ comparison, side, position }) {
+function ComparisonTooltip({ comparison, position, chartMetric }) {
+  const isXpMetric = chartMetric === "xp" || chartMetric === "xpPerSlotHour";
+  const absoluteDelta = isXpMetric ? comparison.xp : comparison.coins;
+  const slotHourDelta = isXpMetric ? comparison.xpPerSlotHour : comparison.coinsPerSlotHour;
+  const metricLabel = getChartMetricDeltaLabel(chartMetric);
+  const slotHourLabel = `${metricLabel}/Slot-h`;
 
   return (
     <div
-      className={side === "left" ? "comparisonTooltipCard left" : "comparisonTooltipCard right"}
+      className="comparisonTooltipCard cursor"
       style={{
-        left: side === "right" ? position.x + 12 : undefined,
-        right: side === "left" ? `calc(100% - ${position.x - 12}px)` : undefined,
-        top: position.y
+        left: position.x + 19,
+        top: position.y + 19
       }}
     >
       <h3>
@@ -335,15 +371,15 @@ function ComparisonTooltip({ comparison, side, position }) {
           ? "Aktuell"
           : `${comparison.hoursToAdd > 0 ? "+" : ""}${comparison.hoursToAdd} h`}
       </h3>
-      <DeltaCard label="Coins" delta={comparison.coins} />
-      <DeltaCard label="XP" delta={comparison.xp} />
-      <DeltaCard label="Slot-Auslastung" delta={comparison.slotHours} />
+      <DeltaCard label={metricLabel} delta={absoluteDelta} />
+      <DeltaCard label={slotHourLabel} delta={slotHourDelta} />
     </div>
   );
 }
 
-function ComparisonChart({ comparisons, mode }) {
+function ComparisonChart({ comparisons, chartMetric }) {
   const [hoveredComparison, setHoveredComparison] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   if (!comparisons.length) return <p className="dashboardEmpty">Kein Vergleichsbereich gewählt.</p>;
 
@@ -360,7 +396,11 @@ function ComparisonChart({ comparisons, mode }) {
   const rangeX = Math.max(1, maxX - minX);
   const rangeY = Math.max(1, maxY - minY || maxY);
   const yTicks = Array.from({ length: 5 }, (_, index) => minY + (rangeY / 4) * index);
-  const xTicks = Array.from({ length: 16 }, (_, index) => minX + (rangeX / 15) * index);
+  const xTickCount = Math.min(16, maxX - minX + 1);
+  const xTicks =
+    xTickCount <= 1
+      ? [minX]
+      : Array.from({ length: xTickCount }, (_, index) => minX + (rangeX / (xTickCount - 1)) * index);
 
   const getX = (value) => padding.left + ((value - minX) / rangeX) * chartWidth;
   const getY = (value) => padding.top + chartHeight - ((value - minY) / rangeY) * chartHeight;
@@ -368,10 +408,6 @@ function ComparisonChart({ comparisons, mode }) {
   const path = comparisons
     .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(item.metric.next)}`)
     .join(" ");
-  const hoveredX = hoveredComparison ? getX(hoveredComparison.hoursToAdd) : 0;
-  const hoveredY = hoveredComparison ? getY(hoveredComparison.metric.next) : 0;
-  const tooltipSide = hoveredX > width / 2 ? "left" : "right";
-
   return (
     <div className="dashboardChartBox comparisonChartBox">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Stundenvergleich">
@@ -379,7 +415,7 @@ function ComparisonChart({ comparisons, mode }) {
           <g key={tick}>
             <path className="dashboardChartGrid" d={`M ${padding.left} ${getY(tick)} H ${width - padding.right}`} />
             <text className="chartAxisText" x={padding.left - 8} y={getY(tick) + 4} textAnchor="end">
-              {formatNumber(tick)}
+              {formatAxisNumber(tick)}
             </text>
           </g>
         ))}
@@ -396,7 +432,7 @@ function ComparisonChart({ comparisons, mode }) {
           Stunden-Abweichung
         </text>
         <text className="chartAxisLabel" x="12" y={padding.top + chartHeight / 2} textAnchor="middle" transform={`rotate(-90 12 ${padding.top + chartHeight / 2})`}>
-          {mode === "xp" ? "XP" : "Coins"} absolut
+          {getChartMetricLabel(chartMetric)}
         </text>
         <path className="dashboardChartLine" d={path} />
         {comparisons.map((item) => (
@@ -406,7 +442,19 @@ function ComparisonChart({ comparisons, mode }) {
             cx={getX(item.hoursToAdd)}
             cy={getY(item.metric.next)}
             r={item.isCurrent ? (hoveredComparison === item ? 8 : 6) : hoveredComparison === item ? 7 : 5}
-            onMouseEnter={() => setHoveredComparison(item)}
+            onMouseEnter={(event) => {
+              setHoveredComparison(item);
+              setTooltipPosition({
+                x: event.nativeEvent.offsetX,
+                y: event.nativeEvent.offsetY
+              });
+            }}
+            onMouseMove={(event) =>
+              setTooltipPosition({
+                x: event.nativeEvent.offsetX,
+                y: event.nativeEvent.offsetY
+              })
+            }
             onMouseLeave={() => setHoveredComparison(null)}
           />
         ))}
@@ -414,8 +462,8 @@ function ComparisonChart({ comparisons, mode }) {
       {hoveredComparison && (
         <ComparisonTooltip
           comparison={hoveredComparison}
-          side={tooltipSide}
-          position={{ x: hoveredX, y: hoveredY }}
+          chartMetric={chartMetric}
+          position={tooltipPosition}
         />
       )}
     </div>
@@ -481,6 +529,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   const [activePage, setActivePage] = useState("overview");
   const [rangeStart, setRangeStart] = useState(0);
   const [rangeEnd, setRangeEnd] = useState(5);
+  const [comparisonMetric, setComparisonMetric] = useState("coins");
   const [progressModalOpen, setProgressModalOpen] = useState(false);
 
   const settings = useMemo(
@@ -490,8 +539,16 @@ export default function DashboardInsights({ result, normalized, calculationSetti
 
   const efficiency = useMemo(() => calculateEfficiency(result, mode), [result, mode]);
   const rangeComparisons = useMemo(
-    () => buildComparisonRange(result, settings, Number(rangeStart || 0), Number(rangeEnd || 0), mode),
-    [result, settings, rangeStart, rangeEnd, mode]
+    () =>
+      buildComparisonRange(
+        result,
+        settings,
+        Number(rangeStart || 0),
+        Number(rangeEnd || 0),
+        mode,
+        comparisonMetric
+      ),
+    [result, settings, rangeStart, rangeEnd, mode, comparisonMetric]
   );
   const slotRecommendation = useMemo(() => buildBestSlotRecommendation(result, settings), [result, settings]);
   const utilizationGroups = useMemo(() => buildBuildingUtilization(result, normalized), [result, normalized]);
