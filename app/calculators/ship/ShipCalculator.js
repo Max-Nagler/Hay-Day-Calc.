@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import "./ship.css";
 import ProductIcon from "../../components/ProductIcon";
 import { calculateShipOrder } from "./shipEngine";
 import { createEmptyCrate, shipCalculatorConfig } from "./shipConfig";
