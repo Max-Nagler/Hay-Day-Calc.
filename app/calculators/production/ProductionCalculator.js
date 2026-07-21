@@ -75,6 +75,136 @@ function formatEntryItems(map, ingredientLookup) {
   return items.length ? items.map((item) => `${item.amount}× ${item.name}`).join(", ") : "keine";
 }
 
+function mapCompactItemsFromMap(map, ingredientLookup) {
+  return Array.from(map?.entries?.() || [])
+    .map(([key, amount]) => {
+      const product = ingredientLookup[key];
+
+      return {
+        name: product?.name || key,
+        key,
+        amount,
+        level: product?.level || 0
+      };
+    })
+    .filter((item) => item.name);
+}
+
+function sanitizeOrders(orders = []) {
+  return orders.map((order) => ({
+    product: order.product,
+    role: order.role,
+    minutes: order.minutes,
+    coins: order.coins,
+    intermediates: order.intermediates || []
+  }));
+}
+
+function sanitizeBuildingComparisons(buildingComparisons = []) {
+  return buildingComparisons.map((comparison) => {
+    const chosenCombination = comparison.chosenCombination || {};
+    const chosenCoins = Number(chosenCombination.totalCoins || 0);
+    const topCombinations = (comparison.topCombinations || []).slice(0, 10).map((combo) => {
+      const beatsChosen = Boolean(combo.feasible && Number(combo.totalCoins || 0) > chosenCoins);
+
+      return {
+        products: combo.products || [],
+        totalCoins: combo.totalCoins || 0,
+        usedSlots: combo.usedSlots || 0,
+        slotCapacity: combo.slotCapacity || 0,
+        totalMinutes: combo.totalMinutes || 0,
+        capacityMinutes: combo.capacityMinutes || 0,
+        coinsPerSlot: combo.coinsPerSlot || 0,
+        feasible: Boolean(combo.feasible),
+        rejectionReasons: combo.rejectionReasons || [],
+        reason: combo.reason || "",
+        globalUsage: combo.globalUsage || [],
+        beatsChosen
+      };
+    });
+    const betterAlternatives = topCombinations.filter((combo) => combo.beatsChosen);
+
+    return {
+      building: comparison.building,
+      chosenCombination: {
+        totalCoins: chosenCombination.totalCoins || 0,
+        usedSlots: chosenCombination.usedSlots || 0,
+        slotCapacity: chosenCombination.slotCapacity || 0,
+        totalMinutes: chosenCombination.totalMinutes || 0,
+        capacityMinutes: chosenCombination.capacityMinutes || 0,
+        coinsPerSlot: chosenCombination.coinsPerSlot || 0,
+        orders: sanitizeOrders(chosenCombination.orders)
+      },
+      topCombinations,
+      hasBetterFeasibleAlternative: betterAlternatives.length > 0
+    };
+  });
+}
+
+function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }) {
+  const buildingComparisons = sanitizeBuildingComparisons(result.optimizationDebug?.buildingComparisons || []);
+  const betterFeasibleAlternatives = buildingComparisons
+    .filter((comparison) => comparison.hasBetterFeasibleAlternative)
+    .map((comparison) => {
+      const chosenCoins = Number(comparison.chosenCombination?.totalCoins || 0);
+      const bestAlternative = [...(comparison.topCombinations || [])]
+        .filter((combo) => combo.beatsChosen)
+        .sort((a, b) => Number(b.totalCoins || 0) - Number(a.totalCoins || 0))[0];
+
+      return {
+        building: comparison.building,
+        chosenCoins,
+        bestAlternativeCoins: Number(bestAlternative?.totalCoins || 0),
+        delta: Number(bestAlternative?.totalCoins || 0) - chosenCoins,
+        products: bestAlternative?.products || []
+      };
+    });
+
+  return {
+    settings: {
+      mode: calculationSettings?.mode,
+      level: calculationSettings?.level,
+      hours: calculationSettings?.hours,
+      globalSlots: calculationSettings?.globalSlots,
+      slotsByBuilding: calculationSettings?.slotsByBuilding || {},
+      allowedBuildings: calculationSettings?.allowedBuildings || [],
+      intermediateMustBeProduced: Boolean(calculationSettings?.intermediateMustBeProduced),
+      excludedIngredientNames: calculationSettings?.excludedIngredientNames || []
+    },
+    totals: {
+      coins: result.totals?.coins || 0,
+      xp: result.totals?.xp || 0,
+      products: result.totals?.products || 0,
+      buildings: result.totals?.buildings || 0,
+      effectiveTimeMin: result.totals?.effectiveTimeMin || 0
+    },
+    productionPlan: (result.productionPlan || []).map((entry) => ({
+      building: entry.building,
+      product: entry.product?.name,
+      amount: entry.amount,
+      role: entry.role,
+      ownTimeMin: entry.ownTimeMin,
+      totalCoins: entry.totalCoins,
+      totalXp: entry.totalXp,
+      slotsUsed: entry.slotsUsed,
+      slots: entry.slots,
+      ingredients: mapCompactItemsFromMap(entry.displayIngredientsMap || entry.ingredientsMap, ingredientLookup),
+      intermediates: mapCompactItemsFromMap(entry.intermediateMap, ingredientLookup)
+    })),
+    optimizationDebug: {
+      chosen: result.optimizationDebug?.chosen || [],
+      rejected: result.optimizationDebug?.rejected || [],
+      topCandidates: result.optimizationDebug?.topCandidates || [],
+      buildingUsage: result.optimizationDebug?.buildingUsage || [],
+      buildingComparisons
+    },
+    buildingComparisons,
+    summary: {
+      betterFeasibleAlternatives
+    }
+  };
+}
+
 function buildDebugMarkdown({ result, calculationSettings, ingredientLookup }) {
   const debug = result.optimizationDebug || {};
   const endProducts = result.productionPlan.filter((entry) => entry.role !== "intermediate");
@@ -653,30 +783,11 @@ export default function ProductionCalculator({ normalized }) {
 
     copyTextToClipboard(
       JSON.stringify(
-        {
-          settings: calculationSettings,
-          totals: result.totals,
-          warnings: result.warnings,
-          productionPlan: result.productionPlan.map((entry) => ({
-            building: entry.building,
-            product: entry.product?.name,
-            amount: entry.amount,
-            role: entry.role,
-            ownTimeMin: entry.ownTimeMin,
-            totalCoins: entry.totalCoins,
-            totalXp: entry.totalXp,
-            slotsUsed: entry.slotsUsed,
-            slots: entry.slots,
-            ingredients: mapItemsFromMap(entry.displayIngredientsMap || entry.ingredientsMap, ingredientLookup),
-            intermediates: mapItemsFromMap(entry.intermediateMap, ingredientLookup)
-          })),
-          optimizationDebug: result.optimizationDebug,
-          buildingUtilization: result.buildingUtilization
-        },
+        buildCompactDebugJson({ result, calculationSettings, ingredientLookup }),
         null,
         2
       ),
-      "Debug-JSON kopiert"
+      "Debug JSON kopiert"
     );
   }
 
@@ -1013,7 +1124,7 @@ export default function ProductionCalculator({ normalized }) {
                     Debug kopieren
                   </button>
                   <button type="button" onClick={copyDebugJson}>
-                    Debug als JSON kopieren
+                    Debug JSON kopieren
                   </button>
                   {debugCopyStatus && <span>{debugCopyStatus}</span>}
                 </div>
