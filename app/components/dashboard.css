@@ -78,7 +78,8 @@
 }
 
 .comparisonBundle h3,
-.comparisonRangeHeader h3 {
+.comparisonRangeHeader h3,
+.comparisonRangeTitle {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
@@ -187,7 +188,7 @@
 
 .comparisonRangeHeader {
   display: grid;
-  grid-template-columns: 1fr auto auto auto 1fr;
+  grid-template-columns: 1fr auto 1fr;
   gap: 8px;
   align-items: end;
   justify-content: center;
@@ -204,6 +205,10 @@
 
 .comparisonRangeHeader h3 {
   align-self: center;
+  text-align: center;
+}
+
+.comparisonRangeTitle {
   text-align: center;
 }
 
@@ -346,7 +351,6 @@
 
 .comparisonTooltipCard {
   position: absolute;
-  top: 50%;
   z-index: 4;
   display: grid;
   gap: 7px;
@@ -361,11 +365,11 @@
 }
 
 .comparisonTooltipCard.right {
-  right: 10px;
+  right: auto;
 }
 
 .comparisonTooltipCard.left {
-  left: 10px;
+  left: auto;
 }
 
 .comparisonTooltipCard h3 {
