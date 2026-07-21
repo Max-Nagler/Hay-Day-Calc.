@@ -81,6 +81,36 @@
   }
 }
 
+.debugExportBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 12px;
+}
+
+.debugExportBar button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text);
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.debugExportBar button:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.debugExportBar span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .optimizationDebugGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
