@@ -14,6 +14,9 @@ export default function CalculatorShell({
   onRefreshData,
   children
 }) {
+  const dataInspector = calculators.find((calculator) => calculator.id === "data-inspector");
+  const calculatorTabs = calculators.filter((calculator) => calculator.id !== "data-inspector");
+
   return (
     <main className="shell compactShell">
       <section className="hero compactHero">
@@ -25,17 +28,29 @@ export default function CalculatorShell({
           </p>
         </div>
 
-        <DataStatus
-          isLoading={isLoading}
-          isRefreshing={isRefreshing}
-          loadError={loadError}
-          syncedAt={syncedAt}
-          onRefreshData={onRefreshData}
-        />
+        <div className="heroStatusActions">
+          {dataInspector && (
+            <button
+              type="button"
+              className={activeCalculatorId === dataInspector.id ? "dataInspectorQuickTab active" : "dataInspectorQuickTab"}
+              onClick={() => onCalculatorChange(dataInspector.id)}
+            >
+              Datenprüfung
+            </button>
+          )}
+
+          <DataStatus
+            isLoading={isLoading}
+            isRefreshing={isRefreshing}
+            loadError={loadError}
+            syncedAt={syncedAt}
+            onRefreshData={onRefreshData}
+          />
+        </div>
       </section>
 
       <section className="calculatorTabs panel compactPanel">
-        {calculators.map((calculator) => (
+        {calculatorTabs.map((calculator) => (
           <button
             key={calculator.id}
             type="button"
