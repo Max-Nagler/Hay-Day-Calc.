@@ -684,7 +684,14 @@ export default function ProductionCalculator({ normalized }) {
         <div className="buildingsColumn equalBuildingsColumn">
           <section
             className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle" : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"}
-            style={settingsColumnHeight ? { height: settingsColumnHeight } : undefined}
+            style={
+              settingsColumnHeight
+                ? {
+                    "--settings-column-height": `${settingsColumnHeight}px`,
+                    height: settingsColumnHeight
+                  }
+                : undefined
+            }
           >
             <div className="panelStaticHeader">Produktionsgebäude</div>
 
