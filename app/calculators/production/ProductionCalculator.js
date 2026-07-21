@@ -123,6 +123,7 @@ export default function ProductionCalculator({ normalized }) {
   const [userChangedBuildings, setUserChangedBuildings] = useState(config.defaultState.userChangedBuildings);
   const [calculationSettings, setCalculationSettings] = useState(null);
   const [calculationStarted, setCalculationStarted] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [hoverIngredients, setHoverIngredients] = useState(null);
   const [settingsColumnHeight, setSettingsColumnHeight] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -322,6 +323,8 @@ export default function ProductionCalculator({ normalized }) {
 
   useEffect(() => {
     if (!result) return;
+
+    setIsCalculating(false);
     requestAnimationFrame(() => outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }, [result]);
 
@@ -457,20 +460,26 @@ export default function ProductionCalculator({ normalized }) {
   }
 
   function startCalculation() {
-    if (!baseSettingsComplete || allowedBuildings.length === 0) return;
+    if (!baseSettingsComplete || allowedBuildings.length === 0 || isCalculating) return;
 
-    setCalculationSettings({
-      mode,
-      level,
-      hours,
-      globalSlots,
-      slotsByBuilding,
-      defaultSlotsByBuilding,
-      allowedBuildings,
-      intermediateMustBeProduced,
-      excludedIngredientNames
-    });
-    setCalculationStarted(true);
+    setIsCalculating(true);
+    setCalculationStarted(false);
+    setCalculationSettings(null);
+
+    window.setTimeout(() => {
+      setCalculationSettings({
+        mode,
+        level,
+        hours,
+        globalSlots,
+        slotsByBuilding,
+        defaultSlotsByBuilding,
+        allowedBuildings,
+        intermediateMustBeProduced,
+        excludedIngredientNames
+      });
+      setCalculationStarted(true);
+    }, 30);
   }
 
   function showIngredientOverlay(event, entry) {
@@ -669,13 +678,21 @@ export default function ProductionCalculator({ normalized }) {
             )}
           </details>
 
+          {isCalculating && (
+            <div className="calculationLoadingDots" aria-live="polite" aria-label="Berechnung läuft">
+              <span />
+              <span />
+              <span />
+            </div>
+          )}
+
           <button
             type="button"
             className="calculateButton compactCalculateButton"
             onClick={startCalculation}
-            disabled={!baseSettingsComplete || allowedBuildings.length === 0}
+            disabled={!baseSettingsComplete || allowedBuildings.length === 0 || isCalculating}
           >
-            Berechnung starten
+            {isCalculating ? "Berechnung läuft" : "Berechnung starten"}
           </button>
 
           {baseSettingsComplete && allowedBuildings.length === 0 && (
