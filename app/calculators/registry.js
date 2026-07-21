@@ -1,7 +1,14 @@
+import DataInspector from "./data-inspector/DataInspector";
 import ProductionCalculator from "./production/ProductionCalculator";
 import ShipCalculator from "./ship/ShipCalculator";
 
 export const calculators = [
+  {
+    id: "data-inspector",
+    label: "Datenprüfung",
+    description: "Zeigt normalisierte Produkte, Gebäude, Icons und Rezepte als Kontrolltabelle.",
+    component: DataInspector
+  },
   {
     id: "production",
     label: "Produktionsplan",
