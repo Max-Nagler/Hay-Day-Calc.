@@ -3,14 +3,37 @@
 import DashboardInsights from "../../components/DashboardInsights";
 import "../../components/dashboard.css";
 import "./production.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { calculateProductionPlan, getAvailableBuildings } from "./productionEngine";
 import ProductIcon from "../../components/ProductIcon";
 import BuildingIcon from "../../components/BuildingIcon";
 import { productionCalculatorConfig } from "./productionConfig";
 
+const oreNames = ["Silbererz", "Golderz", "Platinerz", "Kohle", "Eisenerz"];
+const specialExcludedNames = ["Honig", "Bienenwachs", "Fischfilet", "Hummerschwanz", "Entenfeder"];
+const specialExcludedBuildings = ["Mine", "Schmelzofen"];
+
+function normalizeName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
 function createIngredientLookup(products) {
   return Object.fromEntries((products || []).map((product) => [product.key, product]));
+}
+
+function uniqueByName(items) {
+  const map = new Map();
+
+  for (const item of items || []) {
+    if (!item?.name) continue;
+    map.set(item.name, item);
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    return (a.level || 0) - (b.level || 0) || a.name.localeCompare(b.name);
+  });
 }
 
 function getEntryIngredients(entry, ingredientLookup) {
@@ -81,6 +104,7 @@ function IngredientFloatingOverlay({ hover }) {
 
 export default function ProductionCalculator({ normalized }) {
   const outputRef = useRef(null);
+  const settingsColumnRef = useRef(null);
   const config = productionCalculatorConfig;
 
   const [mode, setMode] = useState(config.defaultState.mode);
@@ -100,8 +124,25 @@ export default function ProductionCalculator({ normalized }) {
   const [calculationSettings, setCalculationSettings] = useState(null);
   const [calculationStarted, setCalculationStarted] = useState(false);
   const [hoverIngredients, setHoverIngredients] = useState(null);
+  const [settingsColumnHeight, setSettingsColumnHeight] = useState(null);
+  const [profiles, setProfiles] = useState([]);
+  const [profileName, setProfileName] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState("");
 
   const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
+
+  useEffect(() => {
+    try {
+      const storedProfiles = JSON.parse(localStorage.getItem("hayDayCalcProfiles") || "[]");
+      setProfiles(Array.isArray(storedProfiles) ? storedProfiles : []);
+    } catch {
+      setProfiles([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("hayDayCalcProfiles", JSON.stringify(profiles));
+  }, [profiles]);
 
   const availableBuildingsFromProducts = useMemo(
     () => getAvailableBuildings(normalized.products, level || 0),
@@ -137,6 +178,70 @@ export default function ProductionCalculator({ normalized }) {
     [normalized.products]
   );
 
+  const selectableExcludedProducts = useMemo(() => {
+    return uniqueByName(
+      normalized.products.filter((product) => {
+        const building = normalizeName(product.building);
+        const name = normalizeName(product.name);
+
+        return (
+          specialExcludedBuildings.some((item) => normalizeName(item) === building) ||
+          specialExcludedNames.some((item) => normalizeName(item) === name) ||
+          oreNames.some((item) => normalizeName(item) === name)
+        );
+      })
+    );
+  }, [normalized.products]);
+
+  const excludedProductByName = useMemo(() => {
+    const map = new Map();
+
+    for (const product of selectableExcludedProducts) {
+      map.set(product.name, product);
+    }
+
+    return map;
+  }, [selectableExcludedProducts]);
+
+  const excludedGroups = useMemo(() => {
+    const productsByBuilding = new Map();
+
+    for (const product of selectableExcludedProducts) {
+      const building = product.building || "";
+
+      if (!productsByBuilding.has(building)) {
+        productsByBuilding.set(building, []);
+      }
+
+      productsByBuilding.get(building).push(product.name);
+    }
+
+    const buildingIconByName = new Map(
+      (normalized.buildings || []).map((building) => [building.name, building])
+    );
+
+    return [
+      {
+        key: "ores",
+        label: "Erze",
+        names: oreNames.filter((name) => excludedProductByName.has(name)),
+        iconItem: buildingIconByName.get("Mine") || excludedProductByName.get("Silbererz")
+      },
+      {
+        key: "smelter",
+        label: "Schmelzofen",
+        names: productsByBuilding.get("Schmelzofen") || [],
+        iconItem: buildingIconByName.get("Schmelzofen")
+      },
+      ...specialExcludedNames.map((name) => ({
+        key: name,
+        label: name,
+        names: excludedProductByName.has(name) ? [name] : [],
+        iconItem: excludedProductByName.get(name)
+      }))
+    ].filter((group) => group.names.length);
+  }, [excludedProductByName, normalized.buildings, selectableExcludedProducts]);
+
   useEffect(() => {
     if (!baseSettingsComplete) {
       setAllowedBuildings([]);
@@ -148,7 +253,44 @@ export default function ProductionCalculator({ normalized }) {
       const stillAvailable = current.filter((name) => availableBuildingNames.includes(name));
       return userChangedBuildings ? stillAvailable : availableBuildingNames;
     });
+
+    setSlotsByBuilding((current) => {
+      const next = {};
+
+      for (const buildingName of availableBuildingNames) {
+        if (current[buildingName] !== undefined) {
+          next[buildingName] = current[buildingName];
+        }
+      }
+
+      return next;
+    });
   }, [availableBuildingNames, baseSettingsComplete, userChangedBuildings]);
+
+  function updateSettingsColumnHeight() {
+    const node = settingsColumnRef.current;
+    if (!node) return;
+
+    setSettingsColumnHeight(node.getBoundingClientRect().height);
+  }
+
+  function scheduleSettingsColumnHeightUpdate() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updateSettingsColumnHeight);
+    });
+  }
+
+  useLayoutEffect(() => {
+    const node = settingsColumnRef.current;
+    if (!node) return;
+
+    updateSettingsColumnHeight();
+
+    const observer = new ResizeObserver(updateSettingsColumnHeight);
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [baseSettingsComplete, excludedIngredientNames.length, profiles.length]);
 
   useEffect(() => {
     setCalculationStarted(false);
@@ -192,6 +334,53 @@ export default function ProductionCalculator({ normalized }) {
     );
   }
 
+  function selectAllBuildings() {
+    setUserChangedBuildings(false);
+    setAllowedBuildings(availableBuildingNames);
+  }
+
+  function clearAllBuildings() {
+    setUserChangedBuildings(true);
+    setAllowedBuildings([]);
+  }
+
+  function updateBuildingSlots(buildingName, value) {
+    setSlotsByBuilding((current) => ({
+      ...current,
+      [buildingName]: Number(value)
+    }));
+  }
+
+  function resetBuildingSlots(buildingName) {
+    setSlotsByBuilding((current) => {
+      const next = { ...current };
+      delete next[buildingName];
+      return next;
+    });
+  }
+
+  function toggleExcludedIngredient(name) {
+    setExcludedIngredientNames((current) => {
+      if (current.includes(name)) {
+        return current.filter((item) => item !== name);
+      }
+
+      return [...current, name];
+    });
+  }
+
+  function toggleExcludedGroup(names) {
+    setExcludedIngredientNames((current) => {
+      const allActive = names.every((name) => current.includes(name));
+
+      if (allActive) {
+        return current.filter((item) => !names.includes(item));
+      }
+
+      return Array.from(new Set([...current, ...names]));
+    });
+  }
+
   function addCustomExcludedIngredient() {
     const value = customExcludedIngredient.trim();
     if (!value) return;
@@ -200,6 +389,67 @@ export default function ProductionCalculator({ normalized }) {
       current.some((item) => item.toLowerCase() === value.toLowerCase()) ? current : [...current, value]
     );
     setCustomExcludedIngredient("");
+  }
+
+  function createProfileSnapshot() {
+    return {
+      mode,
+      level,
+      hours,
+      globalSlots,
+      slotsByBuilding,
+      intermediateMustBeProduced,
+      excludedIngredientNames,
+      allowedBuildings,
+      userChangedBuildings
+    };
+  }
+
+  function saveProfile() {
+    const trimmedName = profileName.trim() || `Profil ${profiles.length + 1}`;
+    const id = selectedProfileId || crypto.randomUUID();
+
+    const nextProfile = {
+      id,
+      name: trimmedName,
+      updatedAt: new Date().toISOString(),
+      settings: createProfileSnapshot()
+    };
+
+    setProfiles((current) => {
+      const withoutCurrent = current.filter((profile) => profile.id !== id);
+      return [...withoutCurrent, nextProfile].sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    setSelectedProfileId(id);
+    setProfileName(trimmedName);
+  }
+
+  function loadProfile(profileId) {
+    const profile = profiles.find((item) => item.id === profileId);
+    if (!profile) return;
+
+    const settings = profile.settings || {};
+
+    setSelectedProfileId(profile.id);
+    setProfileName(profile.name || "");
+    setMode(settings.mode || "");
+    setLevel(Number(settings.level || 50));
+    setHours(Number(settings.hours || 8));
+    setGlobalSlots(Number(settings.globalSlots || 4));
+    setSlotsByBuilding(settings.slotsByBuilding || {});
+    setIntermediateMustBeProduced(Boolean(settings.intermediateMustBeProduced));
+    setExcludedIngredientNames(settings.excludedIngredientNames || []);
+    setAllowedBuildings(settings.allowedBuildings || []);
+    setUserChangedBuildings(Boolean(settings.userChangedBuildings));
+  }
+
+  function deleteProfile() {
+    if (!selectedProfileId) return;
+
+    setProfiles((current) => current.filter((profile) => profile.id !== selectedProfileId));
+    setSelectedProfileId("");
+    setProfileName("");
   }
 
   function startCalculation() {
@@ -237,8 +487,61 @@ export default function ProductionCalculator({ normalized }) {
       <IngredientFloatingOverlay hover={hoverIngredients} />
 
       <section className="settingsGrid compactSettingsGrid equalSettingsGrid">
-        <div className="settingsColumn">
-          <details open className="panel compactPanel">
+        <div className="settingsColumn" ref={settingsColumnRef}>
+          <details open className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
+            <summary>Profile</summary>
+
+            <div className="profileBox">
+              <div className="profileSection">
+                <strong>Neues Profil speichern</strong>
+                <div className="profileRow">
+                  <input
+                    type="text"
+                    placeholder="Profilname"
+                    value={profileName}
+                    onChange={(event) => setProfileName(event.target.value)}
+                  />
+
+                  <button type="button" onClick={saveProfile}>
+                    Speichern
+                  </button>
+                </div>
+              </div>
+
+              <div className="profileSection">
+                <strong>Vorhandenes Profil laden</strong>
+                <div className="profileRow">
+                  <select
+                    value={selectedProfileId}
+                    onChange={(event) => {
+                      const profile = profiles.find((item) => item.id === event.target.value);
+                      setSelectedProfileId(event.target.value);
+                      setProfileName(profile?.name || "");
+                    }}
+                  >
+                    <option value="">Profil wählen</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button type="button" onClick={() => loadProfile(selectedProfileId)} disabled={!selectedProfileId}>
+                    Laden
+                  </button>
+                </div>
+              </div>
+
+              {selectedProfileId && (
+                <button type="button" className="profileDeleteButton" onClick={deleteProfile}>
+                  Profil löschen
+                </button>
+              )}
+            </div>
+          </details>
+
+          <details className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
             <summary>Grunddaten</summary>
 
             <div className="modeSegment">
@@ -256,7 +559,17 @@ export default function ProductionCalculator({ normalized }) {
 
             <label className="field compactField">
               <span>Level: {level}</span>
-              <input type="range" min="1" max="126" step="1" value={level} onChange={(event) => setLevel(Number(event.target.value))} />
+              <input
+                type="range"
+                min="1"
+                max="126"
+                step="1"
+                value={level}
+                onChange={(event) => {
+                  setLevel(Number(event.target.value));
+                  setUserChangedBuildings(false);
+                }}
+              />
             </label>
 
             <div className="dualRange">
@@ -274,7 +587,10 @@ export default function ProductionCalculator({ normalized }) {
             {!baseSettingsComplete && <p className="helperText inlineHelper">Wähle einen Rechenmodus.</p>}
           </details>
 
-          <details className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}>
+          <details
+            className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
+            onToggle={scheduleSettingsColumnHeightUpdate}
+          >
             <summary>Zusatzeinstellungen</summary>
             {baseSettingsComplete ? (
               <label className="checkbox compactCheckbox singleCheckbox">
@@ -286,7 +602,10 @@ export default function ProductionCalculator({ normalized }) {
             )}
           </details>
 
-          <details className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}>
+          <details
+            className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
+            onToggle={scheduleSettingsColumnHeightUpdate}
+          >
             <summary>Zutaten ausschließen</summary>
             {baseSettingsComplete ? (
               <div className="excludedBox exclusionStandaloneBox">
@@ -295,10 +614,30 @@ export default function ProductionCalculator({ normalized }) {
                   <small>{excludedIngredientNames.length} aktiv</small>
                 </div>
 
+                <div className="excludedSmartGrid">
+                  {excludedGroups.map((group) => {
+                    const active = group.names.every((name) => excludedIngredientNames.includes(name));
+                    const representativeProduct = group.iconItem || excludedProductByName.get(group.names[0]);
+
+                    return (
+                      <button
+                        key={group.key}
+                        type="button"
+                        className={active ? "excludedSmartChip active" : "excludedSmartChip"}
+                        onClick={() => toggleExcludedGroup(group.names)}
+                        title={group.names.join(", ")}
+                      >
+                        <ProductIcon item={representativeProduct} />
+                        <span>{group.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="excludedInputRow">
                   <input
                     type="text"
-                    placeholder="Zutat ausschließen"
+                    placeholder="Weitere Zutat"
                     value={customExcludedIngredient}
                     onChange={(event) => setCustomExcludedIngredient(event.target.value)}
                     onKeyDown={(event) => {
@@ -314,11 +653,7 @@ export default function ProductionCalculator({ normalized }) {
                 {excludedIngredientNames.length > 0 && (
                   <div className="activeExcludedList">
                     {excludedIngredientNames.map((ingredient) => (
-                      <button
-                        key={ingredient}
-                        type="button"
-                        onClick={() => setExcludedIngredientNames((current) => current.filter((item) => item !== ingredient))}
-                      >
+                      <button key={ingredient} type="button" onClick={() => toggleExcludedIngredient(ingredient)}>
                         {ingredient} ×
                       </button>
                     ))}
@@ -338,10 +673,19 @@ export default function ProductionCalculator({ normalized }) {
           >
             Berechnung starten
           </button>
+
+          {baseSettingsComplete && allowedBuildings.length === 0 && (
+            <p className="helperText inlineHelper">
+              Wähle mindestens ein Gebäude aus.
+            </p>
+          )}
         </div>
 
         <div className="buildingsColumn equalBuildingsColumn">
-          <section className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle" : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"}>
+          <section
+            className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle" : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"}
+            style={settingsColumnHeight ? { height: settingsColumnHeight } : undefined}
+          >
             <div className="panelStaticHeader">Produktionsgebäude</div>
 
             {!baseSettingsComplete ? (
@@ -349,8 +693,8 @@ export default function ProductionCalculator({ normalized }) {
             ) : (
               <>
                 <div className="buildingActions compactActions">
-                  <button type="button" onClick={() => { setUserChangedBuildings(false); setAllowedBuildings(availableBuildingNames); }}>Alle</button>
-                  <button type="button" onClick={() => { setUserChangedBuildings(true); setAllowedBuildings([]); }}>Keine</button>
+                  <button type="button" onClick={selectAllBuildings}>Alle</button>
+                  <button type="button" onClick={clearAllBuildings}>Keine</button>
                   <span>{allowedBuildings.length}/{availableBuildings.length} aktiv</span>
                 </div>
 
@@ -358,13 +702,20 @@ export default function ProductionCalculator({ normalized }) {
                   {availableBuildings.map((building) => {
                     const isAllowed = allowedBuildings.includes(building.name);
                     const buildingSlots = getBuildingSlots(building.name);
+                    const hasCustomSlots = slotsByBuilding[building.name] !== undefined;
+                    const hasDatabaseSlots = defaultSlotsByBuilding[building.name] !== undefined;
 
                     return (
                       <div key={building.name} className={isAllowed ? "buildingVisualCard active" : "buildingVisualCard"}>
-                        <button type="button" className="buildingVisualButton" onClick={() => toggleBuilding(building.name)}>
+                        <button type="button" className="buildingVisualButton" onClick={() => toggleBuilding(building.name)} title={`ab Level ${building.level}`}>
                           <BuildingIcon item={building} />
                           <span className="buildingVisualName">{building.name}</span>
-                          <span className="buildingVisualMeta">Lv. {building.level}<br />{buildingSlots} Slots</span>
+                          <span className="buildingVisualMeta">
+                            Lv. {building.level}
+                            <br />
+                            {buildingSlots} Slot{buildingSlots === 1 ? "" : "s"}
+                            {hasCustomSlots ? " individuell" : hasDatabaseSlots ? " DB" : " fallback"}
+                          </span>
                         </button>
 
                         <div className="buildingSlotHover">
@@ -376,14 +727,15 @@ export default function ProductionCalculator({ normalized }) {
                               max="10"
                               step="1"
                               value={buildingSlots}
-                              onChange={(event) =>
-                                setSlotsByBuilding((current) => ({
-                                  ...current,
-                                  [building.name]: Number(event.target.value)
-                                }))
-                              }
+                              onChange={(event) => updateBuildingSlots(building.name, event.target.value)}
                             />
                           </label>
+
+                          {hasCustomSlots && (
+                            <button type="button" onClick={() => resetBuildingSlots(building.name)}>
+                              Standard
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
