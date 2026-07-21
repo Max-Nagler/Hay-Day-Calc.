@@ -40,6 +40,8 @@ function getTitleFromProperties(properties) {
 function simplifyPage(page) {
   return {
     id: page.id,
+    icon: page.icon,
+    url: page.url,
     title: getTitleFromProperties(page.properties),
     properties: page.properties
   };
