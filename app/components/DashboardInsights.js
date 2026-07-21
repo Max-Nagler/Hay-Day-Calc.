@@ -14,6 +14,7 @@ const fishingSlotCosts = { 3: 10, 4: 20, 5: 45, 6: 90, 7: 130, 8: 260, 9: 415 };
 const fishingBuildingNames = ["Angelplatz", "Fischernetzmacher", "Hummerbecken", "Entensalon"];
 const coinIconUrl = "https://static.wikia.nocookie.net/hayday/images/f/f0/Coins.png/revision/latest/scale-to-width-down/25?cb=20160223180814";
 const xpIconUrl = "https://static.wikia.nocookie.net/hayday/images/e/e1/Experience.png/revision/latest/scale-to-width-down/25?cb=20160312141717";
+const breadIconUrl = "https://static.wikia.nocookie.net/hayday/images/0/03/Bread.png/revision/latest/scale-to-width-down/25?cb=20160223180130";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
@@ -56,6 +57,7 @@ function getMetricTotal(result, mode) {
 }
 
 function getChartMetricValue(result, metric) {
+  if (metric === "products") return Number(result?.totals?.products || 0);
   if (metric === "xp") return Number(result?.totals?.xp || 0);
   if (metric === "coinsPerSlotHour") return calculateEfficiency(result, "coins");
   if (metric === "xpPerSlotHour") return calculateEfficiency(result, "xp");
@@ -63,6 +65,7 @@ function getChartMetricValue(result, metric) {
 }
 
 function getChartMetricLabel(metric) {
+  if (metric === "products") return "Produkte absolut";
   if (metric === "xp") return "XP absolut";
   if (metric === "coinsPerSlotHour") return "Coins/Slot-h";
   if (metric === "xpPerSlotHour") return "XP/Slot-h";
@@ -70,11 +73,13 @@ function getChartMetricLabel(metric) {
 }
 
 function getChartMetricDeltaLabel(metric) {
+  if (metric === "products") return "Produkte";
   if (metric === "xp" || metric === "xpPerSlotHour") return "XP";
   return "Coins";
 }
 
 function getChartMetricIcon(metric) {
+  if (metric === "products") return breadIconUrl;
   if (metric === "xp" || metric === "xpPerSlotHour") return xpIconUrl;
   return coinIconUrl;
 }
@@ -332,11 +337,14 @@ function buildProgressCurve(result) {
   return points;
 }
 
-function KpiCard({ label, value, helper }) {
+function KpiCard({ label, value, helper, unitIcon }) {
   return (
     <article className="dashboardKpiCard">
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong>
+        {value}
+        {unitIcon && <img className="dashboardKpiUnitIcon" src={unitIcon} alt="" />}
+      </strong>
       {helper && <small>{helper}</small>}
     </article>
   );
@@ -400,6 +408,7 @@ function ComparisonChart({ comparisons, chartMetric, showAllMetrics = false }) {
   const metricIds = showAllMetrics ? ["coins", "xp", "coinsPerSlotHour", "xpPerSlotHour"] : [chartMetric];
   const getComparisonMetric = (item, metricId) => {
     if (metricId === chartMetric) return item.metric.next;
+    if (metricId === "products") return item.products.next;
     if (metricId === "coins") return item.coins.next;
     if (metricId === "xp") return item.xp.next;
     if (metricId === "coinsPerSlotHour") return item.coinsPerSlotHour.next;
@@ -640,8 +649,11 @@ export default function DashboardInsights({ result, normalized, calculationSetti
               type="button"
               className={activePage === page.id ? "active" : ""}
               onClick={() => setActivePage(page.id)}
+              title={page.label}
             >
-              {page.label}
+              {page.id === "overview" && "📋"}
+              {page.id === "comparisons" && "📈"}
+              {page.id === "charts" && "📊"}
             </button>
           ))}
         </div>
@@ -651,8 +663,8 @@ export default function DashboardInsights({ result, normalized, calculationSetti
         <div className="dashboardPage">
           <div className="dashboardKpiGrid">
             <KpiCard label="Produkte" value={formatNumber(result.totals.products)} />
-            <KpiCard label="Coins" value={formatNumber(result.totals.coins)} />
-            <KpiCard label="XP" value={formatNumber(result.totals.xp)} />
+            <KpiCard label="Coins" value={formatNumber(result.totals.coins)} unitIcon={coinIconUrl} />
+            <KpiCard label="XP" value={formatNumber(result.totals.xp)} unitIcon={xpIconUrl} />
             <KpiCard label={efficiencyLabel} value={formatDecimal(efficiency, 1)} helper="Effizienz pro Slot-Stunde" />
           </div>
 
@@ -681,65 +693,74 @@ export default function DashboardInsights({ result, normalized, calculationSetti
         <div className="dashboardPage">
           <article className="dashboardChartCard">
             <div className="dashboardChartTitleRow comparisonTopRow">
-              <span />
-              <button type="button" onClick={() => setComparisonModalOpen(true)}>
-                Alle Kennzahlen
+              <div />
+            </div>
+            <div className="comparisonControlsRow">
+              <div className="comparisonRangeHeader">
+                <h3 className="comparisonRangeTitle">Stundenbereich</h3>
+                <div className="comparisonRangeControls">
+                  <div className="comparisonQuickActions left">
+                    {[-10, -5, -3].map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => setRangeStart((current) => Number(current || 0) + amount)}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="comparisonRangeInputs">
+                    <label>
+                      <span>Von</span>
+                      <input type="number" value={rangeStart} onChange={(event) => updateRangeStart(event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Bis</span>
+                      <input type="number" value={rangeEnd} onChange={(event) => updateRangeEnd(event.target.value)} />
+                    </label>
+                  </div>
+                  <div className="comparisonQuickActions right">
+                    {[3, 5, 10].map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => setRangeEnd((current) => Number(current || 0) + amount)}
+                      >
+                        +{amount}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="comparisonAllMetricsButton"
+                onClick={() => setComparisonModalOpen(true)}
+                title="Alle Kennzahlen"
+              >
+                <img src={coinIconUrl} alt="" />
+                <img src={xpIconUrl} alt="" />
+                <img src={breadIconUrl} alt="" />
               </button>
             </div>
-            <h3 className="comparisonRangeTitle">Stundenbereich</h3>
-            <div className="comparisonControlsRow">
-              <div className="comparisonMetricButtons" aria-label="Y-Achse wählen">
-                {[
-                  { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
-                  { id: "xp", iconUrl: xpIconUrl, label: "XP" }
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={comparisonMetric === item.id ? "active" : ""}
-                    onClick={() => setComparisonMetric(item.id)}
-                    title={item.label}
-                  >
-                    <img src={item.iconUrl} alt="" />
-                    {item.suffix && <small>{item.suffix}</small>}
-                  </button>
-                ))}
+            <div className="comparisonYAxisButtons" aria-label="Y-Achse wählen">
+              {[
+                { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
+                { id: "xp", iconUrl: xpIconUrl, label: "XP" },
+                { id: "products", iconUrl: breadIconUrl, label: "Produkte" }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={comparisonMetric === item.id ? "active" : ""}
+                  onClick={() => setComparisonMetric(item.id)}
+                  title={item.label}
+                >
+                  <img src={item.iconUrl} alt="" />
+                </button>
+              ))}
               </div>
-              <div className="comparisonRangeHeader">
-              <div className="comparisonQuickActions left">
-                {[-10, -5, -3].map((amount) => (
-                  <button
-                    key={amount}
-                    type="button"
-                    onClick={() => setRangeStart((current) => Number(current || 0) + amount)}
-                  >
-                    {amount}
-                  </button>
-                ))}
-              </div>
-              <div className="comparisonRangeInputs">
-                <label>
-                  Von
-                  <input type="number" value={rangeStart} onChange={(event) => updateRangeStart(event.target.value)} />
-                </label>
-                <label>
-                  Bis
-                  <input type="number" value={rangeEnd} onChange={(event) => updateRangeEnd(event.target.value)} />
-                </label>
-              </div>
-              <div className="comparisonQuickActions right">
-                {[3, 5, 10].map((amount) => (
-                  <button
-                    key={amount}
-                    type="button"
-                    onClick={() => setRangeEnd((current) => Number(current || 0) + amount)}
-                  >
-                    +{amount}
-                  </button>
-                ))}
-              </div>
-              </div>
-            </div>
             <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} />
           </article>
           {comparisonModalOpen && (
@@ -754,7 +775,8 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                 <div className="comparisonModalGrid">
                   {[
                     "coins",
-                    "xp"
+                    "xp",
+                    "products"
                   ].map((metricId) => (
                     <article key={metricId} className="dashboardChartCard">
                       <h3 className="metricChartTitle">
