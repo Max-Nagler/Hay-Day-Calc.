@@ -48,13 +48,6 @@
   font-weight: 850;
 }
 
-.dashboardTabs button {
-  display: grid;
-  place-items: center;
-  min-width: 38px;
-  font-size: 16px;
-}
-
 .dashboardTabs button.active,
 .dashboardSubTabs button.active {
   border-color: color-mix(in srgb, var(--green) 34%, transparent);
@@ -310,8 +303,7 @@
 }
 
 .comparisonMetricButtons img,
-.comparisonYAxisButtons img,
-.comparisonAllMetricsButton img {
+.comparisonYAxisButtons img {
   width: 25px;
   height: 25px;
   object-fit: contain;
@@ -337,24 +329,14 @@
 }
 
 .comparisonYAxisButtons {
-  margin: 0 0 -6px 68px;
   width: max-content;
+  margin: 0 0 -6px 68px;
   align-items: center;
 }
 
 .comparisonAllMetricsButton {
-  display: flex;
-  justify-content: center;
-  gap: 2px;
   justify-self: end;
-  width: auto;
-  min-width: 86px;
-  padding: 4px 7px;
-}
-
-.comparisonAllMetricsButton img {
-  width: 22px;
-  height: 22px;
+  font-size: 17px;
 }
 
 .dashboardChartCard {
@@ -717,7 +699,7 @@
 
 .comparisonModalGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
