@@ -260,13 +260,11 @@
 }
 
 .comparisonMetricButtons {
-  position: absolute;
-  left: 14px;
-  top: 86px;
-  z-index: 3;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 5px;
+  align-items: end;
+  justify-content: center;
 }
 
 .comparisonMetricButtons button {
@@ -414,10 +412,23 @@
 }
 
 .comparisonTooltipCard.cursor {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: auto !important;
+  top: auto !important;
   width: min(230px, calc(100% - 28px));
   transform: none;
   max-height: calc(100% - 16px);
   overflow: hidden;
+}
+
+.comparisonControlsRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+  justify-content: center;
 }
 
 .comparisonTooltipCard.right {
@@ -599,8 +610,14 @@
   width: min(1160px, 100%);
 }
 
-.comparisonModal .comparisonChartBox svg {
-  min-height: 520px;
+.comparisonModalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.comparisonModalGrid .comparisonChartBox svg {
+  min-height: 240px;
 }
 
 .metricLine.coins {
@@ -695,10 +712,22 @@
     grid-template-columns: 1fr;
   }
 
+  .comparisonControlsRow {
+    grid-template-columns: 1fr;
+  }
+
   .comparisonQuickActions,
   .comparisonQuickActions.left,
   .comparisonQuickActions.right {
     justify-content: center;
+  }
+
+  .comparisonMetricButtons {
+    justify-content: center;
+  }
+
+  .comparisonModalGrid {
+    grid-template-columns: 1fr;
   }
 }
 
