@@ -1,5 +1,14 @@
-.equalSettingsGrid {
+.equalSettingsGrid,
+.settingsGrid.equalSettingsGrid,
+.compactSettingsGrid.equalSettingsGrid {
   align-items: stretch;
+}
+
+.equalSettingsGrid .settingsColumn,
+.equalSettingsGrid .buildingsColumn,
+.equalSettingsGrid .equalBuildingsColumn {
+  min-height: 0;
+  height: 100%;
 }
 
 .equalSettingsGrid .settingsColumn {
@@ -7,16 +16,20 @@
 }
 
 .equalSettingsGrid .equalBuildingsColumn {
-  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  align-self: stretch;
 }
 
 .equalSettingsGrid .equalBuildingsPanel {
-  height: 100%;
+  align-self: stretch;
+  height: auto;
   min-height: 0;
+  max-height: 100%;
 }
 
-.equalSettingsGrid .equalBuildingsPanel[style] {
-  height: var(--settings-column-height, auto) !important;
+.equalSettingsGrid .equalBuildingsGrid {
+  min-height: 0;
 }
 
 .equalSettingsGrid .calculateButton {
