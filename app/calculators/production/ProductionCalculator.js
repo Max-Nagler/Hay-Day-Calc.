@@ -275,9 +275,13 @@ export default function ProductionCalculator({ normalized }) {
   }
 
   function scheduleSettingsColumnHeightUpdate() {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(updateSettingsColumnHeight);
-    });
+    const updateSoon = () => requestAnimationFrame(updateSettingsColumnHeight);
+
+    updateSoon();
+    requestAnimationFrame(updateSoon);
+    window.setTimeout(updateSettingsColumnHeight, 80);
+    window.setTimeout(updateSettingsColumnHeight, 180);
+    window.setTimeout(updateSettingsColumnHeight, 260);
   }
 
   useLayoutEffect(() => {
