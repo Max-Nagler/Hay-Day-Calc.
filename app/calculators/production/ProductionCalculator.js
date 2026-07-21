@@ -593,7 +593,7 @@ export default function ProductionCalculator({ normalized }) {
 
           <details
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
-
+            onToggle={scheduleSettingsColumnHeightUpdate}
           >
             <summary>Zusatzeinstellungen</summary>
             {baseSettingsComplete ? (
@@ -608,7 +608,7 @@ export default function ProductionCalculator({ normalized }) {
 
           <details
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
-
+            onToggle={scheduleSettingsColumnHeightUpdate}
           >
             <summary>Zutaten ausschließen</summary>
             {baseSettingsComplete ? (
@@ -688,7 +688,13 @@ export default function ProductionCalculator({ normalized }) {
         <div className="buildingsColumn equalBuildingsColumn">
           <section
             className={baseSettingsComplete ? "panel compactPanel equalBuildingsPanel buildingPanelNoToggle" : "panel compactPanel disabled equalBuildingsPanel buildingPanelNoToggle"}
-
+            style={
+              settingsColumnHeight
+                ? {
+                    "--settings-column-height": `${settingsColumnHeight}px`
+                  }
+                : undefined
+            }
           >
             <div className="panelStaticHeader">Produktionsgebäude</div>
 
