@@ -36,6 +36,16 @@ function uniqueByName(items) {
   });
 }
 
+function formatDuration(minutes) {
+  const totalMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(totalMinutes / 60);
+  const restMinutes = totalMinutes % 60;
+
+  if (hours > 0 && restMinutes > 0) return `${hours}h ${restMinutes}min`;
+  if (hours > 0) return `${hours}h`;
+  return `${restMinutes}min`;
+}
+
 function getEntryIngredients(entry, ingredientLookup) {
   return Array.from((entry.displayIngredientsMap || entry.ingredientsMap)?.entries?.() || [])
     .map(([key, amount]) => {
@@ -802,7 +812,7 @@ export default function ProductionCalculator({ normalized }) {
                             <small>
                               {entry.role === "intermediate" ? "Zwischenprodukt" : "Endprodukt"}
                               <br />
-                              {Math.round(entry.ownTimeMin)} min · {entry.slotsUsed}/{entry.slots} Slots · {entry.totalCoins} Coins
+                              {formatDuration(entry.ownTimeMin)} · {entry.slotsUsed}/{entry.slots} Slots · {entry.totalCoins} Coins
                             </small>
                           </article>
                         ))}
