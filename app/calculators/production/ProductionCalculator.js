@@ -46,8 +46,8 @@ function formatDuration(minutes) {
   return `${restMinutes}min`;
 }
 
-function getEntryIngredients(entry, ingredientLookup) {
-  return Array.from((entry.displayIngredientsMap || entry.ingredientsMap)?.entries?.() || [])
+function mapItemsFromMap(map, ingredientLookup) {
+  return Array.from(map?.entries?.() || [])
     .map(([key, amount]) => {
       const product = ingredientLookup[key];
 
@@ -60,6 +60,132 @@ function getEntryIngredients(entry, ingredientLookup) {
       };
     })
     .filter((item) => item.name);
+}
+
+function getEntryIngredients(entry, ingredientLookup) {
+  return mapItemsFromMap(entry.displayIngredientsMap || entry.ingredientsMap, ingredientLookup);
+}
+
+function formatList(items, emptyText = "keine") {
+  return items?.length ? items.join(", ") : emptyText;
+}
+
+function formatEntryItems(map, ingredientLookup) {
+  const items = mapItemsFromMap(map, ingredientLookup);
+  return items.length ? items.map((item) => `${item.amount}× ${item.name}`).join(", ") : "keine";
+}
+
+function buildDebugMarkdown({ result, calculationSettings, ingredientLookup }) {
+  const debug = result.optimizationDebug || {};
+  const endProducts = result.productionPlan.filter((entry) => entry.role !== "intermediate");
+  const intermediateProducts = result.productionPlan.filter((entry) => entry.role === "intermediate");
+  const lines = [];
+
+  lines.push("# Hay-Day-Calc Debug Export");
+  lines.push("");
+  lines.push("## Einstellungen");
+  lines.push(`- Modus: ${result.mode || calculationSettings?.mode || "unbekannt"}`);
+  lines.push(`- Level: ${result.level}`);
+  lines.push(`- Zeitlimit: ${formatDuration((result.hours || calculationSettings?.hours || 0) * 60)}`);
+  lines.push(`- Fallback-Slots: ${calculationSettings?.globalSlots ?? result.settings?.globalSlots ?? "unbekannt"}`);
+  lines.push(`- Zwischenprodukte müssen hergestellt werden: ${calculationSettings?.intermediateMustBeProduced ? "ja" : "nein"}`);
+  lines.push(`- Aktive Gebäude: ${formatList(calculationSettings?.allowedBuildings || [])}`);
+  lines.push(`- Ausgeschlossene Zutaten: ${formatList(calculationSettings?.excludedIngredientNames || [])}`);
+  lines.push("");
+
+  lines.push("## Gesamtergebnis");
+  lines.push(`- Gesamt-Coins: ${Math.round(result.totals?.coins || 0)}`);
+  lines.push(`- Gesamt-XP: ${Math.round(result.totals?.xp || 0)}`);
+  lines.push(`- Anzahl Endprodukte: ${endProducts.reduce((sum, entry) => sum + entry.amount, 0)}`);
+  lines.push(`- Anzahl Zwischenprodukte: ${intermediateProducts.reduce((sum, entry) => sum + entry.amount, 0)}`);
+  lines.push(`- Genutzte Gebäude: ${result.totals?.buildings || 0}`);
+  lines.push(`- Warnungen: ${formatList(result.warnings || [])}`);
+  lines.push("");
+
+  lines.push("## Produktionsliste");
+  for (const entry of result.productionPlan || []) {
+    lines.push(`### ${entry.amount}× ${entry.product.name}`);
+    lines.push(`- Gebäude: ${entry.building}`);
+    lines.push(`- Rolle: ${entry.role === "intermediate" ? "Zwischenprodukt" : "Endprodukt"}`);
+    lines.push(`- Produktionszeit: ${formatDuration(entry.ownTimeMin)}`);
+    lines.push(`- Coins: ${Math.round(entry.totalCoins || 0)}`);
+    lines.push(`- XP: ${Math.round(entry.totalXp || 0)}`);
+    lines.push(`- Slots: ${entry.slotsUsed}/${entry.slots}`);
+    lines.push(`- Zutaten: ${formatEntryItems(entry.displayIngredientsMap || entry.ingredientsMap, ingredientLookup)}`);
+    lines.push(`- Zwischenprodukte: ${formatEntryItems(entry.intermediateMap, ingredientLookup)}`);
+    lines.push("");
+  }
+
+  lines.push("## Debug: Gewählte Produkte");
+  for (const item of debug.chosen || []) {
+    lines.push(`- ${item.amount}× ${item.product}: ${item.reason}`);
+  }
+  if (!debug.chosen?.length) lines.push("- keine");
+  lines.push("");
+
+  lines.push("## Debug: Top-Kandidaten");
+  for (const item of debug.topCandidates || []) {
+    lines.push(`- ${item.product}: ${Math.round(item.score || 0)} Wert, Effizienz ${Number(item.efficiency || 0).toFixed(2)}, Engpass ${formatDuration(item.bottleneckMinutes || 0)}`);
+    lines.push(`  - Gesamt-Kapazität: ${formatDuration(item.totalCapacityMinutes || 0)}`);
+    lines.push(`  - Zwischenprodukt-Kapazität: ${formatDuration(item.intermediateCapacityMinutes || 0)}`);
+    lines.push(`  - Zwischenprodukte: ${formatList(item.intermediates || [])}`);
+    if (item.capacityMinutesByBuilding) {
+      lines.push(`  - Gebäude-Minuten: ${Object.entries(item.capacityMinutesByBuilding).map(([building, minutes]) => `${building}: ${formatDuration(minutes)}`).join(", ")}`);
+    }
+  }
+  if (!debug.topCandidates?.length) lines.push("- keine");
+  lines.push("");
+
+  lines.push("## Debug: Verworfen / Engpässe");
+  for (const item of debug.rejected || []) {
+    lines.push(`- ${item.product}: ${item.reason}`);
+  }
+  if (!debug.rejected?.length) lines.push("- keine");
+  lines.push("");
+
+  lines.push("## Debug pro Gebäude");
+  for (const usage of debug.buildingUsage || []) {
+    lines.push(`### ${usage.building}`);
+    lines.push(`- Verfügbare Slots: ${usage.slotCapacity}`);
+    lines.push(`- Genutzte Slots: ${usage.slots}`);
+    lines.push(`- Zeitlimit: ${formatDuration(usage.capacityMinutes)}`);
+    lines.push(`- Genutzte Kapazität: ${formatDuration(usage.minutes)}`);
+    lines.push(`- Restkapazität: ${formatDuration(Math.max((usage.capacityMinutes || 0) - (usage.minutes || 0), 0))}`);
+    lines.push("");
+  }
+  if (!debug.buildingUsage?.length) lines.push("- keine");
+  lines.push("");
+
+  lines.push("## Optimierungsvergleiche / Slot-Kombinationen");
+  for (const comparison of debug.buildingComparisons || []) {
+    lines.push(`### ${comparison.building}`);
+    lines.push(`- Grund: ${comparison.reason}`);
+    lines.push("- Gewählte Kombination:");
+    const chosen = comparison.chosenCombination || {};
+    lines.push(`  - Gesamt-Coins: ${Math.round(chosen.totalCoins || 0)}`);
+    lines.push(`  - Coins/Slot: ${Number(chosen.coinsPerSlot || 0).toFixed(1)}`);
+    lines.push(`  - Slots: ${chosen.usedSlots || 0}/${chosen.slotCapacity || 0}`);
+    lines.push(`  - Zeit: ${formatDuration(chosen.totalMinutes || 0)} / ${formatDuration(chosen.capacityMinutes || 0)}`);
+    for (const [index, order] of (chosen.orders || []).entries()) {
+      lines.push(`  - Slot ${index + 1}: ${order.product} (${order.role}, ${formatDuration(order.minutes)}, ${order.coins} Coins)`);
+      lines.push(`    - Zwischenprodukte: ${formatList(order.intermediates || [])}`);
+    }
+
+    lines.push("- Top-10 Alternativ-Kombinationen:");
+    for (const [index, combo] of (comparison.topCombinations || []).entries()) {
+      lines.push(`  ${index + 1}. ${combo.products.join(" + ")}`);
+      lines.push(`     - Gesamt-Coins: ${Math.round(combo.totalCoins || 0)}`);
+      lines.push(`     - Coins/Slot: ${Number(combo.coinsPerSlot || 0).toFixed(1)}`);
+      lines.push(`     - Slots: ${combo.usedSlots}/${combo.slotCapacity}`);
+      lines.push(`     - Zeit: ${formatDuration(combo.totalMinutes)} / ${formatDuration(combo.capacityMinutes)}`);
+      lines.push(`     - Grund: ${combo.reason}`);
+      lines.push(`     - Slot-Aufträge: ${(combo.orders || []).map((order) => `${order.product} (${order.role}, ${formatDuration(order.minutes)}, ${order.coins} Coins)`).join(" | ")}`);
+    }
+    lines.push("");
+  }
+  if (!debug.buildingComparisons?.length) lines.push("- keine");
+
+  return lines.join("\n");
 }
 
 function mergeBuildingData(availableBuildings, normalizedBuildings) {
@@ -139,6 +265,7 @@ export default function ProductionCalculator({ normalized }) {
   const [profiles, setProfiles] = useState([]);
   const [profileName, setProfileName] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [debugCopyStatus, setDebugCopyStatus] = useState("");
 
   const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
 
@@ -501,6 +628,58 @@ export default function ProductionCalculator({ normalized }) {
     });
   }
 
+  async function copyTextToClipboard(text, successMessage) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setDebugCopyStatus(successMessage);
+      window.setTimeout(() => setDebugCopyStatus(""), 1800);
+    } catch {
+      setDebugCopyStatus("Kopieren fehlgeschlagen");
+      window.setTimeout(() => setDebugCopyStatus(""), 2200);
+    }
+  }
+
+  function copyDebugMarkdown() {
+    if (!result?.optimizationDebug) return;
+
+    copyTextToClipboard(
+      buildDebugMarkdown({ result, calculationSettings, ingredientLookup }),
+      "Debug kopiert"
+    );
+  }
+
+  function copyDebugJson() {
+    if (!result?.optimizationDebug) return;
+
+    copyTextToClipboard(
+      JSON.stringify(
+        {
+          settings: calculationSettings,
+          totals: result.totals,
+          warnings: result.warnings,
+          productionPlan: result.productionPlan.map((entry) => ({
+            building: entry.building,
+            product: entry.product?.name,
+            amount: entry.amount,
+            role: entry.role,
+            ownTimeMin: entry.ownTimeMin,
+            totalCoins: entry.totalCoins,
+            totalXp: entry.totalXp,
+            slotsUsed: entry.slotsUsed,
+            slots: entry.slots,
+            ingredients: mapItemsFromMap(entry.displayIngredientsMap || entry.ingredientsMap, ingredientLookup),
+            intermediates: mapItemsFromMap(entry.intermediateMap, ingredientLookup)
+          })),
+          optimizationDebug: result.optimizationDebug,
+          buildingUtilization: result.buildingUtilization
+        },
+        null,
+        2
+      ),
+      "Debug-JSON kopiert"
+    );
+  }
+
   function moveIngredientOverlay(event) {
     setHoverIngredients((current) => current && { ...current, x: event.clientX, y: event.clientY });
   }
@@ -827,6 +1006,18 @@ export default function ProductionCalculator({ normalized }) {
 
             <details className="panel compactPanel">
               <summary>Optimierungs-Debug</summary>
+
+              {result.optimizationDebug && (
+                <div className="debugExportBar">
+                  <button type="button" onClick={copyDebugMarkdown}>
+                    Debug kopieren
+                  </button>
+                  <button type="button" onClick={copyDebugJson}>
+                    Debug als JSON kopieren
+                  </button>
+                  {debugCopyStatus && <span>{debugCopyStatus}</span>}
+                </div>
+              )}
 
               <div className="optimizationDebugGrid">
                 <section>
