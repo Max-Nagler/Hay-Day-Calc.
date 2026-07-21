@@ -363,6 +363,11 @@ function ComparisonTooltip({ comparison, position, chartMetric }) {
   return (
     <div
       className="comparisonTooltipCard cursor"
+      style={{
+        left: position.side === "right" ? position.x : undefined,
+        right: position.side === "left" ? `calc(100% - ${position.x}px)` : undefined,
+        top: position.y
+      }}
     >
       <h3>
         {comparison.isCurrent
@@ -459,15 +464,21 @@ function ComparisonChart({ comparisons, chartMetric, showAllMetrics = false }) {
               cy={getY(item.metric.next)}
               r={item.isCurrent ? (hoveredComparison === item ? 8 : 6) : hoveredComparison === item ? 7 : 5}
               onMouseEnter={(event) => {
-                const nextX = Math.min(Math.max(event.nativeEvent.offsetX + 19, 8), 316);
-                const nextY = Math.min(Math.max(event.nativeEvent.offsetY + 19, 8), 72);
+                const cursorX = event.nativeEvent.offsetX;
+                const cursorY = event.nativeEvent.offsetY;
+                const nextSide = cursorX > width - 220 ? "left" : "right";
+                const nextX = nextSide === "right" ? cursorX + 19 : cursorX - 19;
+                const nextY = Math.min(Math.max(cursorY, 44), 128);
                 setHoveredComparison(item);
-                setTooltipPosition({ x: nextX, y: nextY });
+                setTooltipPosition({ x: nextX, y: nextY, side: nextSide });
               }}
               onMouseMove={(event) => {
-                const nextX = Math.min(Math.max(event.nativeEvent.offsetX + 19, 8), 316);
-                const nextY = Math.min(Math.max(event.nativeEvent.offsetY + 19, 8), 72);
-                setTooltipPosition({ x: nextX, y: nextY });
+                const cursorX = event.nativeEvent.offsetX;
+                const cursorY = event.nativeEvent.offsetY;
+                const nextSide = cursorX > width - 220 ? "left" : "right";
+                const nextX = nextSide === "right" ? cursorX + 19 : cursorX - 19;
+                const nextY = Math.min(Math.max(cursorY, 44), 128);
+                setTooltipPosition({ x: nextX, y: nextY, side: nextSide });
               }}
               onMouseLeave={() => setHoveredComparison(null)}
             />
