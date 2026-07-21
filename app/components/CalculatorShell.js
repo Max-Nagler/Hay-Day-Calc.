@@ -1,5 +1,6 @@
 "use client";
 
+import "./shell.css";
 import DataStatus from "./DataStatus";
 
 export default function CalculatorShell({
