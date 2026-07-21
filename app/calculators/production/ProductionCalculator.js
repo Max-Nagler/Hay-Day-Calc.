@@ -2,6 +2,7 @@
 
 import DashboardInsights from "../../components/DashboardInsights";
 import "../../components/dashboard.css";
+import "./production.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateProductionPlan, getAvailableBuildings } from "./productionEngine";
 import ProductIcon from "../../components/ProductIcon";
