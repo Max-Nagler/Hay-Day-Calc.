@@ -283,8 +283,8 @@
 }
 
 .comparisonMetricButtons img {
-  width: 24px;
-  height: 24px;
+  width: 25px;
+  height: 25px;
   object-fit: contain;
 }
 
@@ -413,40 +413,69 @@
 
 .comparisonTooltipCard.cursor {
   position: absolute;
-  width: 176px;
+  width: 132px;
   transform: translateY(-50%);
   max-height: calc(100% - 12px);
   overflow: hidden;
-  gap: 5px;
-  padding: 7px;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 12px;
 }
 
 .comparisonTooltipCard.cursor h3 {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .comparisonTooltipCard.cursor .dashboardDeltaCard {
-  min-height: 58px;
-  padding: 8px;
-  gap: 3px;
-  border-radius: 11px;
+  min-height: 44px;
+  padding: 6px;
+  gap: 2px;
+  border-radius: 9px;
   box-shadow: none;
 }
 
 .comparisonTooltipCard.cursor .dashboardDeltaCard span {
-  font-size: 9px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-height: 15px;
+  font-size: 8px;
 }
 
 .comparisonTooltipCard.cursor .dashboardDeltaCard strong {
-  font-size: 19px;
+  font-size: 16px;
 }
 
 .comparisonTooltipCard.cursor .dashboardDeltaCard small {
-  font-size: 9px;
+  font-size: 8px;
 }
 
 .comparisonTooltipCard.cursor .dashboardMiniBar {
-  height: 5px;
+  height: 4px;
+}
+
+.dashboardMetricIcon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+}
+
+.dashboardMetricSuffix {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.metricChartTitle {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.metricChartTitle img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .comparisonControlsRow {
