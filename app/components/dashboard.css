@@ -762,7 +762,14 @@
 .progressChartBox.large svg {
   min-height: 420px;
 }
+.dashboardChartBox circle.progressPoint.intermediate {
+  fill: var(--blue-soft);
+  stroke: var(--blue);
+}
 
+.dashboardChartBox circle.progressPoint.intermediate:hover {
+  fill: var(--blue);
+}
 :root[data-theme="dark"] .dashboardKpiCard,
 :root[data-theme="dark"] .dashboardDeltaCard,
 :root[data-theme="dark"] .slotRecommendationCard,
