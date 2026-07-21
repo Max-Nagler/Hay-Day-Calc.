@@ -300,21 +300,29 @@ function buildProgressCurve(result) {
 
   for (const entry of entries) {
     const amount = Number(entry.amount || 0);
-    const slots = Math.max(1, Number(entry.slotsUsed || entry.slots || 1));
-    const durationHours = Math.max(0.01, Number(entry.effectiveTimeMin || 0) / 60);
+    if (amount <= 0) continue;
+
+    const availableSlots = Math.max(1, Number(entry.slots || 1));
+    const usedSlots = Math.max(1, Math.min(availableSlots, Number(entry.slotsUsed || amount)));
+    const totalDurationMin = Number(entry.effectiveTimeMin || entry.ownTimeMin || 0);
+    const durationPerItemHours = Math.max(0.01, totalDurationMin / amount / 60);
 
     for (let index = 1; index <= amount; index += 1) {
-      const batch = Math.ceil(index / slots);
+      const batch = Math.ceil(index / usedSlots);
+
       events.push({
-        time: batch * durationHours,
+        time: batch * durationPerItemHours,
         amount: 1,
         productName: entry.product?.name || "Produkt",
-        building: entry.building
+        building: entry.building,
+        slotBatch: batch
       });
     }
   }
 
-  events.sort((a, b) => a.time - b.time);
+  events.sort((a, b) => {
+    return a.time - b.time || a.building.localeCompare(b.building) || a.productName.localeCompare(b.productName);
+  });
 
   let finished = 0;
   const points = [{ time: 0, percent: 0, finished: 0, total: totalProducts }];
@@ -549,7 +557,12 @@ function ProgressChart({ points, large = false }) {
           <span>
             {formatNumber(hoveredPoint.finished)} / {formatNumber(hoveredPoint.total)} Produkte
           </span>
-          {hoveredPoint.productName && <small>{hoveredPoint.productName}</small>}
+          {hoveredPoint.productName && (
+            <small>
+              {hoveredPoint.productName}
+              {hoveredPoint.building ? ` · ${hoveredPoint.building}` : ""}
+            </small>
+          )}
         </div>
       )}
 
