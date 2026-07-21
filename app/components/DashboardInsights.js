@@ -12,6 +12,8 @@ const dashboardPages = [
 const defaultSlotCosts = { 3: 6, 4: 9, 5: 12, 6: 15, 7: 18, 8: 21, 9: 24 };
 const fishingSlotCosts = { 3: 10, 4: 20, 5: 45, 6: 90, 7: 130, 8: 260, 9: 415 };
 const fishingBuildingNames = ["Angelplatz", "Fischernetzmacher", "Hummerbecken", "Entensalon"];
+const coinIconUrl = "https://static.wikia.nocookie.net/hayday/images/6/6d/Coin.png/revision/latest?cb=20221215222116";
+const xpIconUrl = "https://static.wikia.nocookie.net/hayday/images/6/6d/Avatar_Other_Icon.png/revision/latest?cb=20171227192140";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
@@ -362,8 +364,8 @@ function ComparisonTooltip({ comparison, position, chartMetric }) {
     <div
       className="comparisonTooltipCard cursor"
       style={{
-        left: position.x + 19,
-        top: position.y + 19
+        left: position.x,
+        top: position.y
       }}
     >
       <h3>
@@ -377,7 +379,7 @@ function ComparisonTooltip({ comparison, position, chartMetric }) {
   );
 }
 
-function ComparisonChart({ comparisons, chartMetric }) {
+function ComparisonChart({ comparisons, chartMetric, showAllMetrics = false }) {
   const [hoveredComparison, setHoveredComparison] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
@@ -388,7 +390,15 @@ function ComparisonChart({ comparisons, chartMetric }) {
   const padding = { top: 14, right: 22, bottom: 42, left: 68 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const values = comparisons.map((item) => item.metric.next);
+  const metricIds = showAllMetrics ? ["coins", "xp", "coinsPerSlotHour", "xpPerSlotHour"] : [chartMetric];
+  const getComparisonMetric = (item, metricId) => {
+    if (metricId === chartMetric) return item.metric.next;
+    if (metricId === "coins") return item.coins.next;
+    if (metricId === "xp") return item.xp.next;
+    if (metricId === "coinsPerSlotHour") return item.coinsPerSlotHour.next;
+    return item.xpPerSlotHour.next;
+  };
+  const values = comparisons.flatMap((item) => metricIds.map((metricId) => getComparisonMetric(item, metricId)));
   const minX = Math.min(...comparisons.map((item) => item.hoursToAdd));
   const maxX = Math.max(...comparisons.map((item) => item.hoursToAdd));
   const minY = Math.min(...values);
@@ -405,9 +415,12 @@ function ComparisonChart({ comparisons, chartMetric }) {
   const getX = (value) => padding.left + ((value - minX) / rangeX) * chartWidth;
   const getY = (value) => padding.top + chartHeight - ((value - minY) / rangeY) * chartHeight;
 
-  const path = comparisons
-    .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(item.metric.next)}`)
-    .join(" ");
+  const paths = metricIds.map((metricId) => ({
+    metricId,
+    path: comparisons
+      .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(getComparisonMetric(item, metricId))}`)
+      .join(" ")
+  }));
   return (
     <div className="dashboardChartBox comparisonChartBox">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Stundenvergleich">
@@ -432,34 +445,46 @@ function ComparisonChart({ comparisons, chartMetric }) {
           Stunden-Abweichung
         </text>
         <text className="chartAxisLabel" x="12" y={padding.top + chartHeight / 2} textAnchor="middle" transform={`rotate(-90 12 ${padding.top + chartHeight / 2})`}>
-          {getChartMetricLabel(chartMetric)}
+          {showAllMetrics ? "Alle Kennzahlen" : getChartMetricLabel(chartMetric)}
         </text>
-        <path className="dashboardChartLine" d={path} />
-        {comparisons.map((item) => (
-          <circle
-            key={item.hoursToAdd}
-            className={item.isCurrent ? "currentComparisonPoint" : ""}
-            cx={getX(item.hoursToAdd)}
-            cy={getY(item.metric.next)}
-            r={item.isCurrent ? (hoveredComparison === item ? 8 : 6) : hoveredComparison === item ? 7 : 5}
-            onMouseEnter={(event) => {
-              setHoveredComparison(item);
-              setTooltipPosition({
-                x: event.nativeEvent.offsetX,
-                y: event.nativeEvent.offsetY
-              });
-            }}
-            onMouseMove={(event) =>
-              setTooltipPosition({
-                x: event.nativeEvent.offsetX,
-                y: event.nativeEvent.offsetY
-              })
-            }
-            onMouseLeave={() => setHoveredComparison(null)}
+        {paths.map((item) => (
+          <path
+            key={item.metricId}
+            className={`dashboardChartLine metricLine ${item.metricId}`}
+            d={item.path}
           />
         ))}
+        {!showAllMetrics &&
+          comparisons.map((item) => (
+            <circle
+              key={item.hoursToAdd}
+              className={item.isCurrent ? "currentComparisonPoint" : ""}
+              cx={getX(item.hoursToAdd)}
+              cy={getY(item.metric.next)}
+              r={item.isCurrent ? (hoveredComparison === item ? 8 : 6) : hoveredComparison === item ? 7 : 5}
+              onMouseEnter={(event) => {
+                const nextX = Math.min(Math.max(event.nativeEvent.offsetX + 19, 8), 316);
+                const nextY = Math.min(Math.max(event.nativeEvent.offsetY + 19, 8), 72);
+                setHoveredComparison(item);
+                setTooltipPosition({ x: nextX, y: nextY });
+              }}
+              onMouseMove={(event) => {
+                const nextX = Math.min(Math.max(event.nativeEvent.offsetX + 19, 8), 316);
+                const nextY = Math.min(Math.max(event.nativeEvent.offsetY + 19, 8), 72);
+                setTooltipPosition({ x: nextX, y: nextY });
+              }}
+              onMouseLeave={() => setHoveredComparison(null)}
+            />
+          ))}
       </svg>
-      {hoveredComparison && (
+      {showAllMetrics && (
+        <div className="comparisonLegend">
+          {metricIds.map((metricId) => (
+            <span key={metricId} className={metricId}>{getChartMetricLabel(metricId)}</span>
+          ))}
+        </div>
+      )}
+      {hoveredComparison && !showAllMetrics && (
         <ComparisonTooltip
           comparison={hoveredComparison}
           chartMetric={chartMetric}
@@ -530,6 +555,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   const [rangeStart, setRangeStart] = useState(0);
   const [rangeEnd, setRangeEnd] = useState(5);
   const [comparisonMetric, setComparisonMetric] = useState("coins");
+  const [comparisonModalOpen, setComparisonModalOpen] = useState(false);
   const [progressModalOpen, setProgressModalOpen] = useState(false);
 
   const settings = useMemo(
@@ -556,17 +582,18 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   const progressCurve = useMemo(() => buildProgressCurve(result), [result]);
 
   useEffect(() => {
-    if (!progressModalOpen) return;
+    if (!progressModalOpen && !comparisonModalOpen) return;
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setProgressModalOpen(false);
+        setComparisonModalOpen(false);
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [progressModalOpen]);
+  }, [progressModalOpen, comparisonModalOpen]);
 
   if (!result || !calculationSettings) return null;
 
@@ -640,6 +667,12 @@ export default function DashboardInsights({ result, normalized, calculationSetti
       {activePage === "comparisons" && (
         <div className="dashboardPage">
           <article className="dashboardChartCard">
+            <div className="dashboardChartTitleRow comparisonTopRow">
+              <span />
+              <button type="button" onClick={() => setComparisonModalOpen(true)}>
+                Alle Kennzahlen
+              </button>
+            </div>
             <h3 className="comparisonRangeTitle">Stundenbereich</h3>
             <div className="comparisonRangeHeader">
               <div className="comparisonQuickActions left">
@@ -675,8 +708,41 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                 ))}
               </div>
             </div>
-            <ComparisonChart comparisons={rangeComparisons} mode={mode} />
+            <div className="comparisonMetricButtons" aria-label="Y-Achse wählen">
+              {[
+                { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
+                { id: "xp", iconUrl: xpIconUrl, label: "XP" },
+                { id: "coinsPerSlotHour", iconUrl: coinIconUrl, suffix: "/h", label: "Coins/Slot-h" },
+                { id: "xpPerSlotHour", iconUrl: xpIconUrl, suffix: "/h", label: "XP/Slot-h" }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={comparisonMetric === item.id ? "active" : ""}
+                  onClick={() => setComparisonMetric(item.id)}
+                  title={item.label}
+                >
+                  <img src={item.iconUrl} alt="" />
+                  {item.suffix && <small>{item.suffix}</small>}
+                </button>
+              ))}
+            </div>
+            <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} />
           </article>
+          {comparisonModalOpen && (
+            <div className="chartModalOverlay" role="dialog" aria-modal="true">
+              <div className="chartModal comparisonModal">
+                <div className="dashboardChartTitleRow">
+                  <h3>Vergleich: alle Kennzahlen</h3>
+                  <button type="button" onClick={() => setComparisonModalOpen(false)}>
+                    Schließen
+                  </button>
+                </div>
+                <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} showAllMetrics />
+                <p className="dashboardEmpty">Mit Esc schließen.</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
