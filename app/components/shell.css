@@ -1,6 +1,31 @@
+.heroStatusActions {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.dataInspectorQuickTab {
+  min-width: 118px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-warm);
+  border-radius: 14px;
+  background: rgba(255, 250, 240, 0.9);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: var(--shadow);
+}
+
+.dataInspectorQuickTab.active,
+.dataInspectorQuickTab:hover {
+  border-color: color-mix(in srgb, var(--green) 36%, transparent);
+  background: var(--green-soft);
+  color: var(--text);
+}
+
 .calculatorTabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 12px;
   padding: 4px;
