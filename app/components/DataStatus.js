@@ -1,11 +1,13 @@
 "use client";
 
-export default function DataStatus({ isLoading, loadError, syncedAt }) {
+export default function DataStatus({ isLoading, isRefreshing, loadError, syncedAt, onRefreshData }) {
+  const busy = isLoading || isRefreshing;
+
   return (
     <div className="syncBox compactSync">
       <span className={loadError ? "dot warning" : "dot"} />
       <div>
-        <strong>{isLoading ? "Lade Daten…" : loadError ? "Demo-Modus" : "Live-Daten"}</strong>
+        <strong>{isLoading ? "Lade Daten…" : loadError ? "Demo-Modus" : isRefreshing ? "Aktualisiere…" : "Live-Daten"}</strong>
         <small>
           {loadError ||
             `Datenstand: ${
@@ -13,6 +15,16 @@ export default function DataStatus({ isLoading, loadError, syncedAt }) {
             }`}
         </small>
       </div>
+
+      <button
+        type="button"
+        className="syncRefreshButton"
+        onClick={onRefreshData}
+        disabled={busy || !onRefreshData}
+        title="Verwendete Daten neu laden"
+      >
+        {isRefreshing ? "…" : "↻"}
+      </button>
     </div>
   );
 }
