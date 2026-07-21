@@ -6,7 +6,7 @@ import { calculators, getCalculatorById } from "./calculators/registry";
 import { useHayDayData } from "../lib/data/useHayDayData";
 
 export default function Home() {
-  const [activeCalculatorId, setActiveCalculatorId] = useState("production");
+  const [activeCalculatorId, setActiveCalculatorId] = useState("data-inspector");
   const { rawData, normalized, isLoading, isRefreshing, loadError, refreshData } = useHayDayData();
 
   const activeCalculator = useMemo(
