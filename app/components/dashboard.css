@@ -227,6 +227,24 @@
   text-transform: uppercase;
 }
 
+.dashboardChartTitleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.dashboardChartTitleRow button {
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 850;
+}
+
 .dashboardChartBox {
   position: relative;
   display: grid;
@@ -258,6 +276,39 @@
   fill: var(--surface-strong);
   stroke: var(--green);
   stroke-width: 3;
+}
+
+.chartAxisText,
+.chartAxisLabel {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.chartAxisLine {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.comparisonTooltipCard {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 4;
+  display: grid;
+  gap: 7px;
+  width: min(260px, calc(100% - 20px));
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.comparisonTooltipCard h3 {
+  margin: 0;
 }
 
 .chartTooltip {
@@ -308,6 +359,21 @@
   max-height: 260px;
   overflow: auto;
   padding-right: 4px;
+}
+
+.buildingUtilizationKpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.buildingUtilizationKpis .dashboardKpiCard {
+  min-height: 70px;
+  padding: 10px;
+}
+
+.buildingUtilizationKpis .dashboardKpiCard strong {
+  font-size: 22px;
 }
 
 .utilizationIconGroup {
@@ -383,6 +449,33 @@
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.chartModalOverlay {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.46);
+}
+
+.chartModal {
+  display: grid;
+  gap: 12px;
+  width: min(1040px, 100%);
+  max-height: min(760px, 92vh);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--border-warm);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+}
+
+.progressChartBox.large svg {
+  min-height: 420px;
 }
 
 :root[data-theme="dark"] .dashboardKpiCard,
