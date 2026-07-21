@@ -48,6 +48,13 @@
   font-weight: 850;
 }
 
+.dashboardTabs button {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  font-size: 16px;
+}
+
 .dashboardTabs button.active,
 .dashboardSubTabs button.active {
   border-color: color-mix(in srgb, var(--green) 34%, transparent);
@@ -119,10 +126,19 @@
 
 .dashboardKpiCard strong,
 .dashboardDeltaCard strong {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
   color: var(--text);
   font-size: clamp(22px, 4vw, 32px);
   line-height: 1;
   letter-spacing: -0.04em;
+}
+
+.dashboardKpiUnitIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .dashboardKpiCard small,
@@ -188,9 +204,8 @@
 
 .comparisonRangeHeader {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 8px;
-  align-items: end;
+  gap: 6px;
+  align-items: center;
   justify-content: center;
 }
 
@@ -201,6 +216,7 @@
   font-size: 10px;
   font-weight: 850;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .comparisonRangeHeader h3 {
@@ -210,6 +226,14 @@
 
 .comparisonRangeTitle {
   text-align: center;
+}
+
+.comparisonRangeControls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: end;
+  justify-content: center;
 }
 
 .comparisonRangeInputs {
@@ -259,7 +283,8 @@
   font-size: 12px;
 }
 
-.comparisonMetricButtons {
+.comparisonMetricButtons,
+.comparisonYAxisButtons {
   display: flex;
   flex-direction: row;
   gap: 5px;
@@ -267,7 +292,9 @@
   justify-content: center;
 }
 
-.comparisonMetricButtons button {
+.comparisonMetricButtons button,
+.comparisonYAxisButtons button,
+.comparisonAllMetricsButton {
   position: relative;
   display: grid;
   place-items: center;
@@ -282,7 +309,9 @@
   box-shadow: var(--shadow);
 }
 
-.comparisonMetricButtons img {
+.comparisonMetricButtons img,
+.comparisonYAxisButtons img,
+.comparisonAllMetricsButton img {
   width: 25px;
   height: 25px;
   object-fit: contain;
@@ -300,10 +329,32 @@
   font-weight: 900;
 }
 
-.comparisonMetricButtons button.active {
+.comparisonMetricButtons button.active,
+.comparisonYAxisButtons button.active {
   border-color: color-mix(in srgb, var(--green) 40%, transparent);
   background: color-mix(in srgb, var(--green) 16%, var(--surface-strong));
   color: var(--text);
+}
+
+.comparisonYAxisButtons {
+  margin: 0 0 -6px 68px;
+  width: max-content;
+  align-items: center;
+}
+
+.comparisonAllMetricsButton {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  justify-self: end;
+  width: auto;
+  min-width: 86px;
+  padding: 4px 7px;
+}
+
+.comparisonAllMetricsButton img {
+  width: 22px;
+  height: 22px;
 }
 
 .dashboardChartCard {
@@ -480,10 +531,9 @@
 
 .comparisonControlsRow {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: end;
-  justify-content: center;
 }
 
 .comparisonTooltipCard.right {
@@ -667,7 +717,7 @@
 
 .comparisonModalGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -767,6 +817,10 @@
     grid-template-columns: 1fr;
   }
 
+  .comparisonRangeControls {
+    grid-template-columns: 1fr;
+  }
+
   .comparisonControlsRow {
     grid-template-columns: 1fr;
   }
@@ -779,6 +833,15 @@
 
   .comparisonMetricButtons {
     justify-content: center;
+  }
+
+  .comparisonYAxisButtons {
+    margin-left: 0;
+    justify-self: center;
+  }
+
+  .comparisonAllMetricsButton {
+    justify-self: center;
   }
 
   .comparisonModalGrid {
