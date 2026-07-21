@@ -120,6 +120,7 @@ function buildHourComparison(result, settings, hoursToAdd, mode) {
   return {
     hoursToAdd,
     hours: Math.max(1, Number(settings.hours || 0) + hoursToAdd),
+    slotHours: getDelta(calculateSlotHours(simulated), calculateSlotHours(result)),
     metric: getDelta(getMetricTotal(simulated, mode), getMetricTotal(result, mode)),
     products: getDelta(simulated.totals.products, result.totals.products),
     coins: getDelta(simulated.totals.coins, result.totals.coins),
@@ -137,6 +138,7 @@ function buildComparisonRange(result, settings, start, end, mode) {
         ? {
             hoursToAdd: 0,
             hours: Number(settings?.hours || 0),
+            slotHours: getDelta(calculateSlotHours(result), calculateSlotHours(result)),
             metric: getDelta(getMetricTotal(result, mode), getMetricTotal(result, mode)),
             products: getDelta(result.totals.products, result.totals.products),
             coins: getDelta(result.totals.coins, result.totals.coins),
@@ -317,10 +319,17 @@ function DeltaCard({ label, delta }) {
   );
 }
 
-function ComparisonTooltip({ comparison, mode, side }) {
+function ComparisonTooltip({ comparison, side, position }) {
 
   return (
-    <div className={side === "left" ? "comparisonTooltipCard left" : "comparisonTooltipCard right"}>
+    <div
+      className={side === "left" ? "comparisonTooltipCard left" : "comparisonTooltipCard right"}
+      style={{
+        left: side === "right" ? position.x + 12 : undefined,
+        right: side === "left" ? `calc(100% - ${position.x - 12}px)` : undefined,
+        top: position.y
+      }}
+    >
       <h3>
         {comparison.isCurrent
           ? "Aktuell"
@@ -328,6 +337,7 @@ function ComparisonTooltip({ comparison, mode, side }) {
       </h3>
       <DeltaCard label="Coins" delta={comparison.coins} />
       <DeltaCard label="XP" delta={comparison.xp} />
+      <DeltaCard label="Slot-Auslastung" delta={comparison.slotHours} />
     </div>
   );
 }
@@ -349,8 +359,8 @@ function ComparisonChart({ comparisons, mode }) {
   const maxY = Math.max(...values);
   const rangeX = Math.max(1, maxX - minX);
   const rangeY = Math.max(1, maxY - minY || maxY);
-  const yTicks = [minY, minY + rangeY / 2, maxY];
-  const xTicks = Array.from({ length: maxX - minX + 1 }, (_, index) => minX + index);
+  const yTicks = Array.from({ length: 5 }, (_, index) => minY + (rangeY / 4) * index);
+  const xTicks = Array.from({ length: 16 }, (_, index) => minX + (rangeX / 15) * index);
 
   const getX = (value) => padding.left + ((value - minX) / rangeX) * chartWidth;
   const getY = (value) => padding.top + chartHeight - ((value - minY) / rangeY) * chartHeight;
@@ -358,7 +368,9 @@ function ComparisonChart({ comparisons, mode }) {
   const path = comparisons
     .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(item.metric.next)}`)
     .join(" ");
-  const tooltipSide = hoveredComparison && getX(hoveredComparison.hoursToAdd) > width / 2 ? "left" : "right";
+  const hoveredX = hoveredComparison ? getX(hoveredComparison.hoursToAdd) : 0;
+  const hoveredY = hoveredComparison ? getY(hoveredComparison.metric.next) : 0;
+  const tooltipSide = hoveredX > width / 2 ? "left" : "right";
 
   return (
     <div className="dashboardChartBox comparisonChartBox">
@@ -375,7 +387,7 @@ function ComparisonChart({ comparisons, mode }) {
           <g key={tick}>
             <path className="dashboardChartGrid subtle" d={`M ${getX(tick)} ${padding.top} V ${height - padding.bottom}`} />
             <text className="chartAxisText" x={getX(tick)} y={height - 24} textAnchor="middle">
-              {tick > 0 ? "+" : ""}{tick}h
+              {tick > 0 ? "+" : ""}{formatDecimal(tick, tick % 1 === 0 ? 0 : 1)}h
             </text>
           </g>
         ))}
@@ -400,7 +412,11 @@ function ComparisonChart({ comparisons, mode }) {
         ))}
       </svg>
       {hoveredComparison && (
-        <ComparisonTooltip comparison={hoveredComparison} mode={mode} side={tooltipSide} />
+        <ComparisonTooltip
+          comparison={hoveredComparison}
+          side={tooltipSide}
+          position={{ x: hoveredX, y: hoveredY }}
+        />
       )}
     </div>
   );
@@ -499,9 +515,17 @@ export default function DashboardInsights({ result, normalized, calculationSetti
 
   const efficiencyLabel = mode === "xp" ? "XP/Slot-h" : "Coins/Slot-h";
   const recommendationUnit = mode === "xp" ? "XP/Diamant" : "Coins/Diamant";
-  const shiftComparisonRange = (amount) => {
-    setRangeStart((current) => Number(current || 0) + amount);
-    setRangeEnd((current) => Number(current || 0) + amount);
+  const updateRangeStart = (value) => {
+    const nextStart = Number(value || 0);
+    const currentEnd = Number(rangeEnd || 0);
+    setRangeStart(Math.min(nextStart, currentEnd));
+    setRangeEnd(Math.max(nextStart, currentEnd));
+  };
+  const updateRangeEnd = (value) => {
+    const nextEnd = Number(value || 0);
+    const currentStart = Number(rangeStart || 0);
+    setRangeStart(Math.min(currentStart, nextEnd));
+    setRangeEnd(Math.max(currentStart, nextEnd));
   };
 
   return (
@@ -559,28 +583,36 @@ export default function DashboardInsights({ result, normalized, calculationSetti
       {activePage === "comparisons" && (
         <div className="dashboardPage">
           <article className="dashboardChartCard">
+            <h3 className="comparisonRangeTitle">Stundenbereich</h3>
             <div className="comparisonRangeHeader">
               <div className="comparisonQuickActions left">
-                {[-3, -5, -10].map((amount) => (
-                  <button key={amount} type="button" onClick={() => shiftComparisonRange(amount)}>
+                {[-10, -5, -3].map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setRangeStart((current) => Number(current || 0) + amount)}
+                  >
                     {amount}
                   </button>
                 ))}
               </div>
-              <h3>Stundenbereich</h3>
               <div className="comparisonRangeInputs">
                 <label>
                   Von
-                  <input type="number" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} />
+                  <input type="number" value={rangeStart} onChange={(event) => updateRangeStart(event.target.value)} />
                 </label>
                 <label>
                   Bis
-                  <input type="number" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} />
+                  <input type="number" value={rangeEnd} onChange={(event) => updateRangeEnd(event.target.value)} />
                 </label>
               </div>
               <div className="comparisonQuickActions right">
                 {[3, 5, 10].map((amount) => (
-                  <button key={amount} type="button" onClick={() => shiftComparisonRange(amount)}>
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setRangeEnd((current) => Number(current || 0) + amount)}
+                  >
                     +{amount}
                   </button>
                 ))}
