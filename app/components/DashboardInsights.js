@@ -13,7 +13,7 @@ const defaultSlotCosts = { 3: 6, 4: 9, 5: 12, 6: 15, 7: 18, 8: 21, 9: 24 };
 const fishingSlotCosts = { 3: 10, 4: 20, 5: 45, 6: 90, 7: 130, 8: 260, 9: 415 };
 const fishingBuildingNames = ["Angelplatz", "Fischernetzmacher", "Hummerbecken", "Entensalon"];
 const coinIconUrl = "https://static.wikia.nocookie.net/hayday/images/f/f0/Coins.png/revision/latest/scale-to-width-down/25?cb=20160223180814";
-
+const xpIconUrl = "https://static.wikia.nocookie.net/hayday/images/e/e1/Experience.png/revision/latest/scale-to-width-down/25?cb=20160312141717";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
@@ -51,25 +51,31 @@ function getDelta(nextValue, currentValue) {
   return { delta, percent, next };
 }
 
-function getMetricTotal(result) {
-  return Number(result?.totals?.coins || 0);
+function getMetricTotal(result, mode) {
+  return mode === "xp" ? Number(result?.totals?.xp || 0) : Number(result?.totals?.coins || 0);
 }
 
 function getChartMetricValue(result, metric) {
-  if (metric === "coinsPerSlotHour") return calculateEfficiency(result);
+  if (metric === "xp") return Number(result?.totals?.xp || 0);
+  if (metric === "coinsPerSlotHour") return calculateEfficiency(result, "coins");
+  if (metric === "xpPerSlotHour") return calculateEfficiency(result, "xp");
   return Number(result?.totals?.coins || 0);
 }
 
 function getChartMetricLabel(metric) {
+  if (metric === "xp") return "XP absolut";
   if (metric === "coinsPerSlotHour") return "Coins/Slot-h";
+  if (metric === "xpPerSlotHour") return "XP/Slot-h";
   return "Coins absolut";
 }
 
-function getChartMetricDeltaLabel() {
+function getChartMetricDeltaLabel(metric) {
+  if (metric === "xp" || metric === "xpPerSlotHour") return "XP";
   return "Coins";
 }
 
-function getChartMetricIcon() {
+function getChartMetricIcon(metric) {
+  if (metric === "xp" || metric === "xpPerSlotHour") return xpIconUrl;
   return coinIconUrl;
 }
 
@@ -103,10 +109,10 @@ function calculateSlotHours(result) {
   }, 0);
 }
 
-function calculateEfficiency(result) {
+function calculateEfficiency(result, mode) {
   const slotHours = calculateSlotHours(result);
   if (!slotHours) return 0;
-  return getMetricTotal(result) / slotHours;
+  return getMetricTotal(result, mode) / slotHours;
 }
 
 function simulatePlan(settings, overrides = {}) {
@@ -153,7 +159,9 @@ function buildHourComparison(result, settings, hoursToAdd, mode, chartMetric = "
     metric: getDelta(getChartMetricValue(simulated, chartMetric), getChartMetricValue(result, chartMetric)),
     products: getDelta(simulated.totals.products, result.totals.products),
     coins: getDelta(simulated.totals.coins, result.totals.coins),
-    coinsPerSlotHour: getDelta(calculateEfficiency(simulated), calculateEfficiency(result))
+    xp: getDelta(simulated.totals.xp, result.totals.xp),
+    coinsPerSlotHour: getDelta(calculateEfficiency(simulated, "coins"), calculateEfficiency(result, "coins")),
+    xpPerSlotHour: getDelta(calculateEfficiency(simulated, "xp"), calculateEfficiency(result, "xp"))
   };
 }
 
@@ -171,7 +179,9 @@ function buildComparisonRange(result, settings, start, end, mode, chartMetric = 
             metric: getDelta(getChartMetricValue(result, chartMetric), getChartMetricValue(result, chartMetric)),
             products: getDelta(result.totals.products, result.totals.products),
             coins: getDelta(result.totals.coins, result.totals.coins),
-            coinsPerSlotHour: getDelta(calculateEfficiency(result), calculateEfficiency(result)),
+            xp: getDelta(result.totals.xp, result.totals.xp),
+            coinsPerSlotHour: getDelta(calculateEfficiency(result, "coins"), calculateEfficiency(result, "coins")),
+            xpPerSlotHour: getDelta(calculateEfficiency(result, "xp"), calculateEfficiency(result, "xp")),
             isCurrent: true
           }
         : buildHourComparison(result, settings, hoursToAdd, mode, chartMetric)
@@ -180,7 +190,7 @@ function buildComparisonRange(result, settings, start, end, mode, chartMetric = 
 }
 
 function buildBestSlotRecommendation(result, settings) {
-  if (!result || !settings || settings.mode !== "coins") return null;
+  if (!result || !settings || !["coins", "xp"].includes(settings.mode)) return null;
 
   const candidates = (settings.allowedBuildings || [])
     .map((buildingName) => {
@@ -197,7 +207,7 @@ function buildBestSlotRecommendation(result, settings) {
       });
       if (!simulated) return null;
 
-      const metric = getMetricTotal(simulated) - getMetricTotal(result);
+      const metric = getMetricTotal(simulated, settings.mode) - getMetricTotal(result, settings.mode);
 
       return {
         buildingName,
@@ -355,7 +365,8 @@ function DeltaCard({ label, delta, iconUrl, suffix }) {
 }
 
 function ComparisonTooltip({ comparison, position, chartMetric }) {
-  const absoluteDelta = comparison.coins;
+  const isXpMetric = chartMetric === "xp" || chartMetric === "xpPerSlotHour";
+  const absoluteDelta = isXpMetric ? comparison.xp : comparison.coins;
   const metricLabel = getChartMetricDeltaLabel(chartMetric);
   const metricIcon = getChartMetricIcon(chartMetric);
 
@@ -389,11 +400,13 @@ function ComparisonChart({ comparisons, chartMetric, showAllMetrics = false }) {
   const padding = { top: 14, right: 22, bottom: 42, left: 68 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const metricIds = showAllMetrics ? ["coins", "coinsPerSlotHour"] : [chartMetric];
+  const metricIds = showAllMetrics ? ["coins", "xp", "coinsPerSlotHour", "xpPerSlotHour"] : [chartMetric];
   const getComparisonMetric = (item, metricId) => {
     if (metricId === chartMetric) return item.metric.next;
+    if (metricId === "coins") return item.coins.next;
+    if (metricId === "xp") return item.xp.next;
     if (metricId === "coinsPerSlotHour") return item.coinsPerSlotHour.next;
-    return item.coins.next;
+    return item.xpPerSlotHour.next;
   };
   const values = comparisons.flatMap((item) => metricIds.map((metricId) => getComparisonMetric(item, metricId)));
   const minX = Math.min(...comparisons.map((item) => item.hoursToAdd));
@@ -557,8 +570,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   const [activePage, setActivePage] = useState("overview");
   const [rangeStart, setRangeStart] = useState(0);
   const [rangeEnd, setRangeEnd] = useState(5);
-  const [comparisonMetric, setComparisonMetric] = useState("coins");
-  const [comparisonModalOpen, setComparisonModalOpen] = useState(false);
+  const comparisonMetric = "coins";
   const [progressModalOpen, setProgressModalOpen] = useState(false);
 
   const settings = useMemo(
@@ -566,7 +578,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
     [normalized, calculationSettings]
   );
 
-  const efficiency = useMemo(() => calculateEfficiency(result), [result]);
+  const efficiency = useMemo(() => calculateEfficiency(result, mode), [result, mode]);
   const rangeComparisons = useMemo(
     () =>
       buildComparisonRange(
@@ -585,23 +597,22 @@ export default function DashboardInsights({ result, normalized, calculationSetti
   const progressCurve = useMemo(() => buildProgressCurve(result), [result]);
 
   useEffect(() => {
-    if (!progressModalOpen && !comparisonModalOpen) return;
+    if (!progressModalOpen) return;
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setProgressModalOpen(false);
-        setComparisonModalOpen(false);
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [progressModalOpen, comparisonModalOpen]);
+  }, [progressModalOpen]);
 
   if (!result || !calculationSettings) return null;
 
-  const efficiencyLabel = "Coins/Slot-h";
-  const recommendationUnit = "Coins/Diamant";
+  const efficiencyLabel = mode === "xp" ? "XP/Slot-h" : "Coins/Slot-h";
+  const recommendationUnit = mode === "xp" ? "XP/Diamant" : "Coins/Diamant";
   const updateRangeStart = (value) => {
     const nextStart = Number(value || 0);
     const currentEnd = Number(rangeEnd || 0);
@@ -642,7 +653,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
           <div className="dashboardKpiGrid">
             <KpiCard label="Produkte" value={formatNumber(result.totals.products)} />
             <KpiCard label="Coins" value={formatNumber(result.totals.coins)} unitIcon={coinIconUrl} />
-
+            <KpiCard label="XP" value={formatNumber(result.totals.xp)} unitIcon={xpIconUrl} />
             <KpiCard label={efficiencyLabel} value={formatDecimal(efficiency, 1)} helper="Effizienz pro Slot-Stunde" />
           </div>
 
@@ -656,7 +667,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                 </p>
                 <div className="slotRecommendationStats">
                   <span>{formatDecimal(slotRecommendation.score, 1)} {recommendationUnit}</span>
-                  <span>+{formatNumber(slotRecommendation.metric)} Coins</span>
+                  <span>+{formatNumber(slotRecommendation.metric)} {mode === "xp" ? "XP" : "Coins"}</span>
                   <span>+{formatNumber(slotRecommendation.productsDelta)} Produkte</span>
                 </div>
               </>
@@ -708,60 +719,12 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="comparisonAllMetricsButton"
-                onClick={() => setComparisonModalOpen(true)}
-                title="Alle Kennzahlen"
-              >
-                📊
-              </button>
-            </div>
-            <div className="comparisonYAxisButtons" aria-label="Y-Achse wählen">
-              {[
-                { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
 
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={comparisonMetric === item.id ? "active" : ""}
-                  onClick={() => setComparisonMetric(item.id)}
-                  title={item.label}
-                >
-                  <img src={item.iconUrl} alt="" />
-                </button>
-              ))}
             </div>
+
             <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} />
           </article>
-          {comparisonModalOpen && (
-            <div className="chartModalOverlay" role="dialog" aria-modal="true">
-              <div className="chartModal comparisonModal">
-                <div className="dashboardChartTitleRow">
-                  <h3>Vergleich: alle Kennzahlen</h3>
-                  <button type="button" onClick={() => setComparisonModalOpen(false)}>
-                    Schließen
-                  </button>
-                </div>
-                <div className="comparisonModalGrid">
-                  {[
-                    "coins",
-                    "coinsPerSlotHour"
-                  ].map((metricId) => (
-                    <article key={metricId} className="dashboardChartCard">
-                      <h3 className="metricChartTitle">
-                        <img src={getChartMetricIcon(metricId)} alt="" />
-                        <span>{getChartMetricLabel(metricId)}</span>
-                      </h3>
-                      <ComparisonChart comparisons={rangeComparisons} chartMetric={metricId} />
-                    </article>
-                  ))}
-                </div>
-                <p className="dashboardEmpty">Mit Esc schließen.</p>
-              </div>
-            </div>
-          )}
+
         </div>
       )}
 
