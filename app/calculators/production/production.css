@@ -1,10 +1,22 @@
-.equalSettingsGrid .equalBuildingsPanel {
-  height: min(684px, calc(100vh - 158px));
-  min-height: 510px;
+.equalSettingsGrid {
+  align-items: stretch;
 }
 
 .equalSettingsGrid .settingsColumn {
   grid-auto-rows: max-content;
+}
+
+.equalSettingsGrid .equalBuildingsColumn {
+  min-height: 0;
+}
+
+.equalSettingsGrid .equalBuildingsPanel {
+  height: 100%;
+  min-height: 0;
+}
+
+.equalSettingsGrid .equalBuildingsPanel[style] {
+  height: var(--settings-column-height, auto) !important;
 }
 
 .equalSettingsGrid .calculateButton {
@@ -17,8 +29,9 @@
 
 @media (max-width: 960px) {
   .equalBuildingsPanel,
-  .equalSettingsGrid .equalBuildingsPanel {
-    height: auto;
+  .equalSettingsGrid .equalBuildingsPanel,
+  .equalSettingsGrid .equalBuildingsPanel[style] {
+    height: auto !important;
     min-height: 0;
   }
 }
