@@ -1,0 +1,154 @@
+.shipCalculator {
+  display: grid;
+  gap: 12px;
+}
+
+.shipCalculator .settingsGrid {
+  grid-template-columns: minmax(300px, 390px) minmax(420px, 1fr);
+}
+
+.shipCrateList {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 14px;
+}
+
+.shipCrateRow {
+  display: grid;
+  grid-template-columns: 42px minmax(180px, 1fr) 76px 76px 42px 34px;
+  gap: 8px;
+  align-items: center;
+  min-height: 48px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-strong) 78%, transparent);
+}
+
+.shipCrateNumber {
+  display: grid;
+  place-items: center;
+  min-height: 32px;
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.shipCrateRow select,
+.shipCrateRow input {
+  min-height: 32px;
+}
+
+.shipCrateProductIcon {
+  display: grid;
+  place-items: center;
+}
+
+.shipCrateProductIcon .visualIcon {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border-radius: 9px;
+}
+
+.shipCrateRow > button {
+  min-height: 32px;
+  border: 1px solid rgba(229, 100, 88, 0.25);
+  border-radius: 10px;
+  background: var(--red-soft);
+  color: #9e332b;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.shipAddCrateButton {
+  min-height: 38px;
+  border: 1px dashed color-mix(in srgb, var(--green) 45%, var(--border));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--green-soft) 64%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.shipResult {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+.shipResult .summaryGrid,
+.shipResult .warnings {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+
+.shipResult.possible .panelStaticHeader {
+  color: var(--green);
+}
+
+.shipResult.warning .panelStaticHeader {
+  color: var(--orange);
+}
+
+.shipResult.possible {
+  border-color: color-mix(in srgb, var(--green) 34%, var(--border-warm));
+}
+
+.shipResult.warning {
+  border-color: color-mix(in srgb, var(--orange) 34%, var(--border-warm));
+}
+
+.shipCalculator .visualProductionGrid {
+  padding-bottom: 4px;
+}
+
+.shipCalculator details.panel .visualProductionGrid {
+  margin-bottom: 14px;
+}
+
+:root[data-theme="dark"] .shipCrateRow {
+  background: var(--surface-strong);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .shipAddCrateButton {
+  background: var(--green-soft);
+}
+
+:root[data-theme="dark"] .shipCrateNumber {
+  background: var(--green-soft);
+}
+
+:root[data-theme="dark"] .shipCrateRow > button {
+  background: var(--red-soft);
+  color: #ffd4d0;
+}
+
+@media (max-width: 960px) {
+  .shipCalculator .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .shipCrateRow {
+    grid-template-columns: 42px minmax(160px, 1fr) 70px 70px 40px 34px;
+  }
+}
+
+@media (max-width: 620px) {
+  .shipCrateRow {
+    grid-template-columns: 38px 1fr 64px;
+  }
+
+  .shipCrateRow select {
+    grid-column: 2 / -1;
+  }
+
+  .shipCrateRow input,
+  .shipCrateProductIcon,
+  .shipCrateRow > button {
+    grid-column: auto;
+  }
+}
