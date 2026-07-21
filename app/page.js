@@ -15,7 +15,6 @@ const fallbackRawData = {
 
 const modes = [
   { id: "coins", label: "Coins" },
-  { id: "xp", label: "XP" },
   { id: "slots", label: "Slots" }
 ];
 
@@ -1149,8 +1148,7 @@ export default function Home() {
                                     Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)}
                                     <br />
                                     {entry.slotsUsed}/{entry.slots} Slots ·{" "}
-                                    {Math.round(entry.totalCoins)} Coins ·{" "}
-                                    {Math.round(entry.totalXp)} XP
+                                    {Math.round(entry.totalCoins)} Coins
                                   </small>
                                 )}
                               </>
