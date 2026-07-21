@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import "./dataInspector.css";
 
 function formatValue(value) {
@@ -13,10 +14,44 @@ function statusClass(value) {
   return value ? "ok" : "missing";
 }
 
+function buildRecipeGroups(recipes) {
+  const grouped = new Map();
+
+  for (const recipe of recipes || []) {
+    const productKey = recipe.productKey || recipe.product || "unbekannt";
+    const current = grouped.get(productKey) || {
+      product: recipe.product || "Unbekannt",
+      productKey,
+      ingredients: [],
+      ingredientSummary: ""
+    };
+
+    current.ingredients.push({
+      name: recipe.ingredient || "Unbekannt",
+      key: recipe.ingredientKey || "",
+      amount: recipe.amount || 0
+    });
+
+    grouped.set(productKey, current);
+  }
+
+  return Array.from(grouped.values())
+    .map((group) => ({
+      ...group,
+      ingredients: group.ingredients.sort((a, b) => a.name.localeCompare(b.name, "de")),
+      ingredientSummary: group.ingredients
+        .sort((a, b) => a.name.localeCompare(b.name, "de"))
+        .map((ingredient) => `${ingredient.amount}× ${ingredient.name}`)
+        .join(", ")
+    }))
+    .sort((a, b) => a.product.localeCompare(b.product, "de"));
+}
+
 export default function DataInspector({ normalized, rawData }) {
   const products = normalized?.products || [];
   const recipes = normalized?.recipes || [];
   const buildings = normalized?.buildings || [];
+  const recipeGroups = useMemo(() => buildRecipeGroups(recipes), [recipes]);
 
   return (
     <section className="dataInspector">
@@ -33,8 +68,8 @@ export default function DataInspector({ normalized, rawData }) {
         <div className="dataInspectorStats">
           <span><strong>{products.length}</strong> Produkte</span>
           <span><strong>{buildings.length}</strong> Gebäude</span>
-          <span><strong>{recipes.length}</strong> Rezepte</span>
-          <span><strong>{rawData?.counts?.mainDatabase ?? "—"}</strong> Rohdaten</span>
+          <span><strong>{recipes.length}</strong> Rezeptzeilen</span>
+          <span><strong>{recipeGroups.length}</strong> Gesamtrezepte</span>
         </div>
       </div>
 
@@ -65,6 +100,40 @@ export default function DataInspector({ normalized, rawData }) {
                   <td>{formatValue(product.iconSource)}</td>
                   <td>{formatValue(product.categories)}</td>
                   <td><code>{product.id}</code></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details className="panel dataInspectorPanel" open>
+        <summary>Gesamtrezepte prüfen</summary>
+        <div className="tableScroller">
+          <table className="dataInspectorTable recipeSummaryTable">
+            <thead>
+              <tr>
+                <th>Produkt</th>
+                <th>Gesamtrezept</th>
+                <th>Zutaten-Anzahl</th>
+                <th>Produkt-Key</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipeGroups.map((group) => (
+                <tr key={group.productKey}>
+                  <td className={statusClass(group.product)}><strong>{formatValue(group.product)}</strong></td>
+                  <td className={statusClass(group.ingredients.length)}>
+                    <div className="recipeIngredientList">
+                      {group.ingredients.map((ingredient) => (
+                        <span key={`${group.productKey}-${ingredient.key || ingredient.name}`}>
+                          <strong>{ingredient.amount}×</strong> {ingredient.name}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>{group.ingredients.length}</td>
+                  <td><code>{group.productKey}</code></td>
                 </tr>
               ))}
             </tbody>
@@ -105,7 +174,7 @@ export default function DataInspector({ normalized, rawData }) {
       </details>
 
       <details className="panel dataInspectorPanel">
-        <summary>Rezepte prüfen</summary>
+        <summary>Einzelne Rezeptzeilen prüfen</summary>
         <div className="tableScroller">
           <table className="dataInspectorTable">
             <thead>
