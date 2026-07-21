@@ -413,14 +413,40 @@
 
 .comparisonTooltipCard.cursor {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
-  left: auto !important;
-  top: auto !important;
-  width: min(230px, calc(100% - 28px));
-  transform: none;
-  max-height: calc(100% - 16px);
+  width: 176px;
+  transform: translateY(-50%);
+  max-height: calc(100% - 12px);
   overflow: hidden;
+  gap: 5px;
+  padding: 7px;
+}
+
+.comparisonTooltipCard.cursor h3 {
+  font-size: 11px;
+}
+
+.comparisonTooltipCard.cursor .dashboardDeltaCard {
+  min-height: 58px;
+  padding: 8px;
+  gap: 3px;
+  border-radius: 11px;
+  box-shadow: none;
+}
+
+.comparisonTooltipCard.cursor .dashboardDeltaCard span {
+  font-size: 9px;
+}
+
+.comparisonTooltipCard.cursor .dashboardDeltaCard strong {
+  font-size: 19px;
+}
+
+.comparisonTooltipCard.cursor .dashboardDeltaCard small {
+  font-size: 9px;
+}
+
+.comparisonTooltipCard.cursor .dashboardMiniBar {
+  height: 5px;
 }
 
 .comparisonControlsRow {
