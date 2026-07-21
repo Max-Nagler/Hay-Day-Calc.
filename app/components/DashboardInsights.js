@@ -363,10 +363,6 @@ function ComparisonTooltip({ comparison, position, chartMetric }) {
   return (
     <div
       className="comparisonTooltipCard cursor"
-      style={{
-        left: position.x,
-        top: position.y
-      }}
     >
       <h3>
         {comparison.isCurrent
@@ -674,7 +670,27 @@ export default function DashboardInsights({ result, normalized, calculationSetti
               </button>
             </div>
             <h3 className="comparisonRangeTitle">Stundenbereich</h3>
-            <div className="comparisonRangeHeader">
+            <div className="comparisonControlsRow">
+              <div className="comparisonMetricButtons" aria-label="Y-Achse wählen">
+                {[
+                  { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
+                  { id: "xp", iconUrl: xpIconUrl, label: "XP" },
+                  { id: "coinsPerSlotHour", iconUrl: coinIconUrl, suffix: "/h", label: "Coins/Slot-h" },
+                  { id: "xpPerSlotHour", iconUrl: xpIconUrl, suffix: "/h", label: "XP/Slot-h" }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={comparisonMetric === item.id ? "active" : ""}
+                    onClick={() => setComparisonMetric(item.id)}
+                    title={item.label}
+                  >
+                    <img src={item.iconUrl} alt="" />
+                    {item.suffix && <small>{item.suffix}</small>}
+                  </button>
+                ))}
+              </div>
+              <div className="comparisonRangeHeader">
               <div className="comparisonQuickActions left">
                 {[-10, -5, -3].map((amount) => (
                   <button
@@ -707,25 +723,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="comparisonMetricButtons" aria-label="Y-Achse wählen">
-              {[
-                { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
-                { id: "xp", iconUrl: xpIconUrl, label: "XP" },
-                { id: "coinsPerSlotHour", iconUrl: coinIconUrl, suffix: "/h", label: "Coins/Slot-h" },
-                { id: "xpPerSlotHour", iconUrl: xpIconUrl, suffix: "/h", label: "XP/Slot-h" }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={comparisonMetric === item.id ? "active" : ""}
-                  onClick={() => setComparisonMetric(item.id)}
-                  title={item.label}
-                >
-                  <img src={item.iconUrl} alt="" />
-                  {item.suffix && <small>{item.suffix}</small>}
-                </button>
-              ))}
+              </div>
             </div>
             <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} />
           </article>
@@ -738,7 +736,19 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                     Schließen
                   </button>
                 </div>
-                <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} showAllMetrics />
+                <div className="comparisonModalGrid">
+                  {[
+                    "coins",
+                    "xp",
+                    "coinsPerSlotHour",
+                    "xpPerSlotHour"
+                  ].map((metricId) => (
+                    <article key={metricId} className="dashboardChartCard">
+                      <h3>{getChartMetricLabel(metricId)}</h3>
+                      <ComparisonChart comparisons={rangeComparisons} chartMetric={metricId} />
+                    </article>
+                  ))}
+                </div>
                 <p className="dashboardEmpty">Mit Esc schließen.</p>
               </div>
             </div>
