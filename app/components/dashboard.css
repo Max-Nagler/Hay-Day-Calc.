@@ -261,18 +261,20 @@
 
 .comparisonMetricButtons {
   position: absolute;
-  left: 12px;
-  top: 62px;
+  left: 14px;
+  top: 86px;
   z-index: 3;
-  display: grid;
-  grid-template-columns: repeat(2, 32px);
+  display: flex;
+  flex-direction: column;
   gap: 5px;
 }
 
 .comparisonMetricButtons button {
+  position: relative;
   display: grid;
   place-items: center;
-  min-height: 30px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface-strong);
@@ -280,6 +282,24 @@
   font-size: 11px;
   font-weight: 900;
   box-shadow: var(--shadow);
+}
+
+.comparisonMetricButtons img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.comparisonMetricButtons small {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  padding: 1px 3px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
 }
 
 .comparisonMetricButtons button.active {
@@ -396,6 +416,8 @@
 .comparisonTooltipCard.cursor {
   width: min(230px, calc(100% - 28px));
   transform: none;
+  max-height: calc(100% - 16px);
+  overflow: hidden;
 }
 
 .comparisonTooltipCard.right {
@@ -571,6 +593,66 @@
   border-radius: 18px;
   background: var(--surface);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+}
+
+.comparisonModal {
+  width: min(1160px, 100%);
+}
+
+.comparisonModal .comparisonChartBox svg {
+  min-height: 520px;
+}
+
+.metricLine.coins {
+  stroke: var(--orange);
+}
+
+.metricLine.xp {
+  stroke: var(--green);
+  stroke-dasharray: 10 8;
+}
+
+.metricLine.coinsPerSlotHour {
+  stroke: var(--blue);
+  stroke-dasharray: 3 7;
+}
+
+.metricLine.xpPerSlotHour {
+  stroke: var(--accent-extra);
+  stroke-dasharray: 16 5 4 5;
+}
+
+.comparisonLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.comparisonLegend span::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  margin-right: 5px;
+  border-radius: 999px;
+  vertical-align: middle;
+  background: var(--orange);
+}
+
+.comparisonLegend .xp::before {
+  background: repeating-linear-gradient(90deg, var(--green) 0 7px, transparent 7px 12px);
+}
+
+.comparisonLegend .coinsPerSlotHour::before {
+  background: repeating-linear-gradient(90deg, var(--blue) 0 3px, transparent 3px 7px);
+}
+
+.comparisonLegend .xpPerSlotHour::before {
+  background: repeating-linear-gradient(90deg, var(--accent-extra) 0 10px, transparent 10px 14px, var(--accent-extra) 14px 17px, transparent 17px 21px);
 }
 
 .progressChartBox.large svg {
