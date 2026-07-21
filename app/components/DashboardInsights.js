@@ -9,39 +9,14 @@ const dashboardPages = [
   { id: "charts", label: "Diagramme" }
 ];
 
-const hourOptions = [1, 2, 4];
-
-const defaultSlotCosts = {
-  3: 6,
-  4: 9,
-  5: 12,
-  6: 15,
-  7: 18,
-  8: 21,
-  9: 24
-};
-
-const fishingSlotCosts = {
-  3: 10,
-  4: 20,
-  5: 45,
-  6: 90,
-  7: 130,
-  8: 260,
-  9: 415
-};
-
-const fishingBuildingNames = [
-  "Angelplatz",
-  "Fischernetzmacher",
-  "Hummerbecken",
-  "Entensalon"
-];
+const defaultSlotCosts = { 3: 6, 4: 9, 5: 12, 6: 15, 7: 18, 8: 21, 9: 24 };
+const fishingSlotCosts = { 3: 10, 4: 20, 5: 45, 6: 90, 7: 130, 8: 260, 9: 415 };
+const fishingBuildingNames = ["Angelplatz", "Fischernetzmacher", "Hummerbecken", "Entensalon"];
 
 function formatNumber(value) {
-  return new Intl.NumberFormat("de-DE", {
-    maximumFractionDigits: 0
-  }).format(Math.round(Number(value || 0)));
+  return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
+    Math.round(Number(value || 0))
+  );
 }
 
 function formatDecimal(value, digits = 1) {
@@ -62,11 +37,7 @@ function getDelta(nextValue, currentValue) {
   const next = Number(nextValue || 0);
   const delta = next - current;
   const percent = current > 0 ? (delta / current) * 100 : 0;
-
-  return {
-    delta,
-    percent
-  };
+  return { delta, percent };
 }
 
 function getBuildingSlots(buildingName, settings) {
@@ -83,8 +54,7 @@ function getSlotCost(buildingName, nextSlot) {
     buildingName.toLowerCase().includes(name.toLowerCase())
   );
 
-  const costMap = isFishingBuilding ? fishingSlotCosts : defaultSlotCosts;
-  return costMap[nextSlot] || null;
+  return (isFishingBuilding ? fishingSlotCosts : defaultSlotCosts)[nextSlot] || null;
 }
 
 function calculateSlotHours(result) {
@@ -103,9 +73,9 @@ function calculateSlotHours(result) {
 function calculateEfficiency(result, mode) {
   const slotHours = calculateSlotHours(result);
   if (!slotHours) return 0;
-
-  if (mode === "xp") return Number(result?.totals?.xp || 0) / slotHours;
-  return Number(result?.totals?.coins || 0) / slotHours;
+  return mode === "xp"
+    ? Number(result?.totals?.xp || 0) / slotHours
+    : Number(result?.totals?.coins || 0) / slotHours;
 }
 
 function simulatePlan(settings, overrides = {}) {
@@ -129,7 +99,6 @@ function simulatePlan(settings, overrides = {}) {
 
 function buildSimulationSettings({ normalized, calculationSettings }) {
   if (!normalized || !calculationSettings) return null;
-
   return {
     ...calculationSettings,
     products: normalized.products,
@@ -141,7 +110,7 @@ function buildHourComparison(result, settings, hoursToAdd) {
   if (!result || !settings) return null;
 
   const simulated = simulatePlan(settings, {
-    hours: Number(settings.hours || 0) + hoursToAdd
+    hours: Math.max(1, Number(settings.hours || 0) + hoursToAdd)
   });
 
   if (!simulated) return null;
@@ -154,6 +123,16 @@ function buildHourComparison(result, settings, hoursToAdd) {
   };
 }
 
+function buildComparisonRange(result, settings, start, end) {
+  const min = Math.min(start, end);
+  const max = Math.max(start, end);
+
+  return Array.from({ length: max - min + 1 }, (_, index) => min + index)
+    .filter((hoursToAdd) => hoursToAdd !== 0)
+    .map((hoursToAdd) => buildHourComparison(result, settings, hoursToAdd))
+    .filter(Boolean);
+}
+
 function buildBestSlotRecommendation(result, settings) {
   if (!result || !settings || !["coins", "xp"].includes(settings.mode)) return null;
 
@@ -162,7 +141,6 @@ function buildBestSlotRecommendation(result, settings) {
       const currentSlots = Number(getBuildingSlots(buildingName, settings));
       const nextSlot = currentSlots + 1;
       const cost = getSlotCost(buildingName, nextSlot);
-
       if (!cost) return null;
 
       const simulated = simulatePlan(settings, {
@@ -171,7 +149,6 @@ function buildBestSlotRecommendation(result, settings) {
           [buildingName]: nextSlot
         }
       });
-
       if (!simulated) return null;
 
       const metric =
@@ -179,17 +156,14 @@ function buildBestSlotRecommendation(result, settings) {
           ? Number(simulated.totals.xp || 0) - Number(result.totals.xp || 0)
           : Number(simulated.totals.coins || 0) - Number(result.totals.coins || 0);
 
-      const score = metric / cost;
-
       return {
         buildingName,
         currentSlots,
         nextSlot,
         cost,
         metric,
-        score,
-        productsDelta:
-          Number(simulated.totals.products || 0) - Number(result.totals.products || 0)
+        score: metric / cost,
+        productsDelta: Number(simulated.totals.products || 0) - Number(result.totals.products || 0)
       };
     })
     .filter(Boolean)
@@ -199,54 +173,89 @@ function buildBestSlotRecommendation(result, settings) {
   return candidates[0] || null;
 }
 
-function buildBuildingUtilization(result) {
-  return (result?.productionByBuilding || [])
+function buildBuildingIconLookup(normalized) {
+  return new Map((normalized?.buildings || []).map((building) => [building.name, building.iconUrl || ""]));
+}
+
+function buildBuildingUtilization(result, normalized) {
+  const iconLookup = buildBuildingIconLookup(normalized);
+  const rows = (result?.productionByBuilding || [])
     .map((group) => {
-      const usedSlots = group.items.reduce((total, entry) => {
-        return total + Number(entry.slotsUsed || 0);
-      }, 0);
-
-      const availableSlots = Math.max(
-        ...group.items.map((entry) => Number(entry.slots || 0)),
-        usedSlots,
-        1
-      );
-
+      const usedSlots = group.items.reduce((total, entry) => total + Number(entry.slotsUsed || 0), 0);
+      const availableSlots = Math.max(...group.items.map((entry) => Number(entry.slots || 0)), usedSlots, 1);
       const percent = Math.min(100, (usedSlots / availableSlots) * 100);
 
       return {
         building: group.building,
+        iconUrl: iconLookup.get(group.building) || "",
         usedSlots,
         availableSlots,
-        percent
+        percent: Math.round(percent)
       };
     })
     .sort((a, b) => b.percent - a.percent);
-}
 
-function buildProgressCurve(result, totalHours) {
-  const entries = (result?.productionByBuilding || []).flatMap((group) => group.items || []);
-  const totalProducts = entries.reduce((total, entry) => total + Number(entry.amount || 0), 0);
+  const grouped = new Map();
 
-  if (!entries.length || !totalProducts || !totalHours) {
-    return [];
+  for (const row of rows) {
+    if (!grouped.has(row.percent)) {
+      grouped.set(row.percent, {
+        percent: row.percent,
+        buildings: []
+      });
+    }
+
+    grouped.get(row.percent).buildings.push(row);
   }
 
-  return Array.from({ length: Math.ceil(totalHours) + 1 }, (_, hour) => {
-    const finishedProducts = entries.reduce((total, entry) => {
-      const productTimeHours = Number(entry.effectiveTimeMin || 0) / 60;
-      const slots = Math.max(1, Number(entry.slotsUsed || entry.slots || 1));
-      const productsPerHour = productTimeHours > 0 ? slots / productTimeHours : 0;
-      const finished = Math.min(Number(entry.amount || 0), Math.floor(productsPerHour * hour));
+  return Array.from(grouped.values()).sort((a, b) => b.percent - a.percent);
+}
 
-      return total + finished;
-    }, 0);
+function buildProgressCurve(result) {
+  const entries = (result?.productionByBuilding || []).flatMap((group) =>
+    (group.items || []).map((entry) => ({
+      ...entry,
+      building: group.building
+    }))
+  );
+  const totalProducts = entries.reduce((total, entry) => total + Number(entry.amount || 0), 0);
 
-    return {
-      hour,
-      percent: Math.min(100, (finishedProducts / totalProducts) * 100)
-    };
-  });
+  if (!entries.length || !totalProducts) return [];
+
+  const events = [];
+
+  for (const entry of entries) {
+    const amount = Number(entry.amount || 0);
+    const slots = Math.max(1, Number(entry.slotsUsed || entry.slots || 1));
+    const durationHours = Math.max(0.01, Number(entry.effectiveTimeMin || 0) / 60);
+
+    for (let index = 1; index <= amount; index += 1) {
+      const batch = Math.ceil(index / slots);
+      events.push({
+        time: batch * durationHours,
+        amount: 1,
+        productName: entry.product?.name || "Produkt",
+        building: entry.building
+      });
+    }
+  }
+
+  events.sort((a, b) => a.time - b.time);
+
+  let finished = 0;
+  const points = [{ time: 0, percent: 0, finished: 0, total: totalProducts }];
+
+  for (const event of events) {
+    finished += event.amount;
+    points.push({
+      ...event,
+      finished,
+      total: totalProducts,
+      percent: Math.min(100, (finished / totalProducts) * 100)
+    });
+  }
+
+  return points;
 }
 
 function KpiCard({ label, value, helper }) {
@@ -275,51 +284,113 @@ function DeltaCard({ label, delta }) {
   );
 }
 
-function ProgressChart({ points }) {
-  if (!points.length) {
-    return <p className="dashboardEmpty">Noch keine Diagrammdaten.</p>;
-  }
+function ComparisonChart({ comparisons }) {
+  if (!comparisons.length) return <p className="dashboardEmpty">Kein Vergleichsbereich gewählt.</p>;
 
   const width = 520;
-  const height = 160;
-  const maxHour = Math.max(...points.map((point) => point.hour), 1);
+  const height = 150;
+  const values = comparisons.map((item) => item.products.percent);
+  const minX = Math.min(...comparisons.map((item) => item.hoursToAdd));
+  const maxX = Math.max(...comparisons.map((item) => item.hoursToAdd));
+  const minY = Math.min(...values, 0);
+  const maxY = Math.max(...values, 0);
+  const rangeX = Math.max(1, maxX - minX);
+  const rangeY = Math.max(1, maxY - minY);
 
-  const path = points
-    .map((point, index) => {
-      const x = (point.hour / maxHour) * width;
-      const y = height - (point.percent / 100) * height;
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-    })
+  const getX = (value) => ((value - minX) / rangeX) * width;
+  const getY = (value) => height - ((value - minY) / rangeY) * height;
+
+  const path = comparisons
+    .map((item, index) => `${index === 0 ? "M" : "L"} ${getX(item.hoursToAdd)} ${getY(item.products.percent)}`)
     .join(" ");
 
   return (
-    <div className="dashboardChartBox">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Produktionsfortschritt">
-        <path className="dashboardChartGrid" d={`M 0 ${height} H ${width}`} />
+    <div className="dashboardChartBox comparisonChartBox">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Stundenvergleich">
+        <path className="dashboardChartGrid" d={`M 0 ${getY(0)} H ${width}`} />
         <path className="dashboardChartLine" d={path} />
-        {points.map((point) => {
-          const x = (point.hour / maxHour) * width;
-          const y = height - (point.percent / 100) * height;
-
-          return <circle key={point.hour} cx={x} cy={y} r="4" />;
-        })}
+        {comparisons.map((item) => (
+          <g key={item.hoursToAdd} className="comparisonPoint">
+            <circle cx={getX(item.hoursToAdd)} cy={getY(item.products.percent)} r="5" />
+            <title>
+              {item.hoursToAdd > 0 ? "+" : ""}
+              {item.hoursToAdd} h: {item.products.delta >= 0 ? "+" : ""}
+              {formatNumber(item.products.delta)} Produkte ({formatPercent(item.products.percent)})
+            </title>
+          </g>
+        ))}
       </svg>
       <div className="dashboardChartLegend">
-        <span>0 h</span>
-        <span>{maxHour} h</span>
+        <span>{minX > 0 ? "+" : ""}{minX} h</span>
+        <span>Produkte in %</span>
+        <span>{maxX > 0 ? "+" : ""}{maxX} h</span>
       </div>
     </div>
   );
 }
 
-export default function DashboardInsights({
-  result,
-  normalized,
-  calculationSettings,
-  mode
-}) {
+function ProgressChart({ points }) {
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  if (!points.length) return <p className="dashboardEmpty">Noch keine Diagrammdaten.</p>;
+
+  const width = 520;
+  const height = 170;
+  const maxTime = Math.max(...points.map((point) => point.time), 1);
+  const getX = (time) => (time / maxTime) * width;
+  const getY = (percent) => height - (percent / 100) * height;
+
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${getX(point.time)} ${getY(point.percent)}`)
+    .join(" ");
+
+  return (
+    <div className="dashboardChartBox progressChartBox">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Produktionsfortschritt">
+        <path className="dashboardChartGrid" d={`M 0 ${height} H ${width}`} />
+        <path className="dashboardChartLine" d={path} />
+        {points.map((point, index) => (
+          <circle
+            key={`${point.time}-${index}`}
+            cx={getX(point.time)}
+            cy={getY(point.percent)}
+            r={hoveredPoint === point ? 6 : 3.5}
+            onMouseEnter={() => setHoveredPoint(point)}
+            onMouseLeave={() => setHoveredPoint(null)}
+          />
+        ))}
+      </svg>
+
+      {hoveredPoint && (
+        <div className="chartTooltip">
+          <strong>{formatDecimal(hoveredPoint.time, 1)} h</strong>
+          <span>
+            {formatNumber(hoveredPoint.finished)} / {formatNumber(hoveredPoint.total)} Produkte
+          </span>
+          {hoveredPoint.productName && <small>{hoveredPoint.productName}</small>}
+        </div>
+      )}
+
+      <div className="dashboardChartLegend">
+        <span>0 h</span>
+        <span>{formatDecimal(maxTime, 1)} h</span>
+      </div>
+    </div>
+  );
+}
+
+function BuildingIcon({ building }) {
+  if (building.iconUrl) {
+    return <img src={building.iconUrl} alt="" />;
+  }
+
+  return <span>{building.building.slice(0, 1)}</span>;
+}
+
+export default function DashboardInsights({ result, normalized, calculationSettings, mode }) {
   const [activePage, setActivePage] = useState("overview");
-  const [activeHourDelta, setActiveHourDelta] = useState(1);
+  const [rangeStart, setRangeStart] = useState(-2);
+  const [rangeEnd, setRangeEnd] = useState(2);
 
   const settings = useMemo(
     () => buildSimulationSettings({ normalized, calculationSettings }),
@@ -328,30 +399,20 @@ export default function DashboardInsights({
 
   const efficiency = useMemo(() => calculateEfficiency(result, mode), [result, mode]);
 
-  const hourComparisons = useMemo(() => {
-    return Object.fromEntries(
-      hourOptions.map((hoursToAdd) => [
-        hoursToAdd,
-        buildHourComparison(result, settings, hoursToAdd)
-      ])
-    );
+  const fixedComparisons = useMemo(() => {
+    return [1, 2, 4].map((hoursToAdd) => buildHourComparison(result, settings, hoursToAdd)).filter(Boolean);
   }, [result, settings]);
 
-  const slotRecommendation = useMemo(
-    () => buildBestSlotRecommendation(result, settings),
-    [result, settings]
-  );
+  const rangeComparisons = useMemo(() => {
+    return buildComparisonRange(result, settings, Number(rangeStart || 0), Number(rangeEnd || 0));
+  }, [result, settings, rangeStart, rangeEnd]);
 
-  const utilization = useMemo(() => buildBuildingUtilization(result), [result]);
-
-  const progressCurve = useMemo(
-    () => buildProgressCurve(result, calculationSettings?.hours || 0),
-    [result, calculationSettings?.hours]
-  );
+  const slotRecommendation = useMemo(() => buildBestSlotRecommendation(result, settings), [result, settings]);
+  const utilizationGroups = useMemo(() => buildBuildingUtilization(result, normalized), [result, normalized]);
+  const progressCurve = useMemo(() => buildProgressCurve(result), [result]);
 
   if (!result || !calculationSettings) return null;
 
-  const activeComparison = hourComparisons[activeHourDelta];
   const efficiencyLabel = mode === "xp" ? "XP/Slot-h" : "Coins/Slot-h";
   const recommendationUnit = mode === "xp" ? "XP/Diamant" : "Coins/Diamant";
 
@@ -383,11 +444,7 @@ export default function DashboardInsights({
             <KpiCard label="Produkte" value={formatNumber(result.totals.products)} />
             <KpiCard label="Coins" value={formatNumber(result.totals.coins)} />
             <KpiCard label="XP" value={formatNumber(result.totals.xp)} />
-            <KpiCard
-              label={efficiencyLabel}
-              value={formatDecimal(efficiency, 1)}
-              helper="Effizienz pro Slot-Stunde"
-            />
+            <KpiCard label={efficiencyLabel} value={formatDecimal(efficiency, 1)} helper="Effizienz pro Slot-Stunde" />
           </div>
 
           <article className="slotRecommendationCard">
@@ -396,17 +453,11 @@ export default function DashboardInsights({
               <>
                 <strong>{slotRecommendation.buildingName}</strong>
                 <p>
-                  +1 Slot ({slotRecommendation.currentSlots} → {slotRecommendation.nextSlot}) für{" "}
-                  {slotRecommendation.cost} Diamanten
+                  +1 Slot ({slotRecommendation.currentSlots} → {slotRecommendation.nextSlot}) für {slotRecommendation.cost} Diamanten
                 </p>
                 <div className="slotRecommendationStats">
-                  <span>
-                    {formatDecimal(slotRecommendation.score, 1)} {recommendationUnit}
-                  </span>
-                  <span>
-                    +{formatNumber(slotRecommendation.metric)}{" "}
-                    {mode === "xp" ? "XP" : "Coins"}
-                  </span>
+                  <span>{formatDecimal(slotRecommendation.score, 1)} {recommendationUnit}</span>
+                  <span>+{formatNumber(slotRecommendation.metric)} {mode === "xp" ? "XP" : "Coins"}</span>
                   <span>+{formatNumber(slotRecommendation.productsDelta)} Produkte</span>
                 </div>
               </>
@@ -419,26 +470,31 @@ export default function DashboardInsights({
 
       {activePage === "comparisons" && (
         <div className="dashboardPage">
-          <div className="dashboardSubTabs">
-            {hourOptions.map((hoursToAdd) => (
-              <button
-                key={hoursToAdd}
-                type="button"
-                className={activeHourDelta === hoursToAdd ? "active" : ""}
-                onClick={() => setActiveHourDelta(hoursToAdd)}
-              >
-                +{hoursToAdd} h
-              </button>
+          <div className="dashboardDeltaGrid">
+            {fixedComparisons.map((comparison) => (
+              <article key={comparison.hoursToAdd} className="comparisonBundle">
+                <h3>+{comparison.hoursToAdd} h</h3>
+                <DeltaCard label="Produkte" delta={comparison.products} />
+                <DeltaCard label="Coins" delta={comparison.coins} />
+                <DeltaCard label="XP" delta={comparison.xp} />
+              </article>
             ))}
           </div>
 
-          {activeComparison && (
-            <div className="dashboardDeltaGrid">
-              <DeltaCard label="Produkte" delta={activeComparison.products} />
-              <DeltaCard label="Coins" delta={activeComparison.coins} />
-              <DeltaCard label="XP" delta={activeComparison.xp} />
+          <article className="dashboardChartCard">
+            <div className="comparisonRangeHeader">
+              <h3>Stundenbereich</h3>
+              <label>
+                Von
+                <input type="number" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} />
+              </label>
+              <label>
+                Bis
+                <input type="number" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} />
+              </label>
             </div>
-          )}
+            <ComparisonChart comparisons={rangeComparisons} />
+          </article>
         </div>
       )}
 
@@ -451,14 +507,17 @@ export default function DashboardInsights({
 
           <article className="dashboardChartCard">
             <h3>Gebäude-Auslastung</h3>
-            <div className="utilizationList">
-              {utilization.map((item) => (
-                <div key={item.building} className="utilizationRow">
-                  <span>{item.building}</span>
-                  <div className="utilizationBar">
-                    <span style={{ width: `${item.percent}%` }} />
+            <div className="utilizationIconGroups">
+              {utilizationGroups.map((group) => (
+                <div key={group.percent} className="utilizationIconGroup">
+                  <strong>{group.percent}%</strong>
+                  <div>
+                    {group.buildings.map((building) => (
+                      <span key={building.building} className="utilizationIcon" title={`${building.building}: ${group.percent}%`}>
+                        <BuildingIcon building={building} />
+                      </span>
+                    ))}
                   </div>
-                  <strong>{formatDecimal(item.percent, 0)}%</strong>
                 </div>
               ))}
             </div>
