@@ -57,6 +57,31 @@
   border-color: var(--border);
 }
 
+.syncRefreshButton {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.syncRefreshButton:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--green) 36%, transparent);
+  background: var(--green-soft);
+}
+
+:root[data-theme="dark"] .syncRefreshButton {
+  background: var(--surface-strong);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 @media (max-width: 960px) {
   .calculatorTabs {
     grid-template-columns: 1fr;
