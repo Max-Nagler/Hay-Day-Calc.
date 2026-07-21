@@ -12,8 +12,9 @@ const dashboardPages = [
 const defaultSlotCosts = { 3: 6, 4: 9, 5: 12, 6: 15, 7: 18, 8: 21, 9: 24 };
 const fishingSlotCosts = { 3: 10, 4: 20, 5: 45, 6: 90, 7: 130, 8: 260, 9: 415 };
 const fishingBuildingNames = ["Angelplatz", "Fischernetzmacher", "Hummerbecken", "Entensalon"];
-const coinIconUrl = "https://static.wikia.nocookie.net/hayday/images/6/6d/Coin.png/revision/latest?cb=20221215222116";
-const xpIconUrl = "https://static.wikia.nocookie.net/hayday/images/6/6d/Avatar_Other_Icon.png/revision/latest?cb=20171227192140";
+const coinIconUrl = "https://static.wikia.nocookie.net/hayday/images/f/f0/Coins.png/revision/latest/scale-to-width-down/25?cb=20160223180814";
+const xpIconUrl = "https://static.wikia.nocookie.net/hayday/images/e/e1/Experience.png/revision/latest/scale-to-width-down/25?cb=20160312141717";
+const clockIconUrl = "https://static.wikia.nocookie.net/hayday/images/3/35/Clock.png/revision/latest/scale-to-width-down/25?cb=20160228103426";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
@@ -72,6 +73,11 @@ function getChartMetricLabel(metric) {
 function getChartMetricDeltaLabel(metric) {
   if (metric === "xp" || metric === "xpPerSlotHour") return "XP";
   return "Coins";
+}
+
+function getChartMetricIcon(metric) {
+  if (metric === "xp" || metric === "xpPerSlotHour") return xpIconUrl;
+  return coinIconUrl;
 }
 
 function getBuildingSlots(buildingName, settings) {
@@ -337,10 +343,13 @@ function KpiCard({ label, value, helper }) {
   );
 }
 
-function DeltaCard({ label, delta }) {
+function DeltaCard({ label, delta, iconUrl, suffix }) {
   return (
     <article className="dashboardDeltaCard">
-      <span>{label}</span>
+      <span>
+        {iconUrl ? <img className="dashboardMetricIcon" src={iconUrl} alt={label} /> : label}
+        {suffix && <small className="dashboardMetricSuffix">{suffix}</small>}
+      </span>
       <strong>
         {delta.delta >= 0 ? "+" : ""}
         {formatNumber(delta.delta)}
@@ -359,6 +368,7 @@ function ComparisonTooltip({ comparison, position, chartMetric }) {
   const slotHourDelta = isXpMetric ? comparison.xpPerSlotHour : comparison.coinsPerSlotHour;
   const metricLabel = getChartMetricDeltaLabel(chartMetric);
   const slotHourLabel = `${metricLabel}/Slot-h`;
+  const metricIcon = getChartMetricIcon(chartMetric);
 
   return (
     <div
@@ -374,8 +384,8 @@ function ComparisonTooltip({ comparison, position, chartMetric }) {
           ? "Aktuell"
           : `${comparison.hoursToAdd > 0 ? "+" : ""}${comparison.hoursToAdd} h`}
       </h3>
-      <DeltaCard label={metricLabel} delta={absoluteDelta} />
-      <DeltaCard label={slotHourLabel} delta={slotHourDelta} />
+      <DeltaCard label={metricLabel} delta={absoluteDelta} iconUrl={metricIcon} />
+      <DeltaCard label={slotHourLabel} delta={slotHourDelta} iconUrl={metricIcon} suffix="/h" />
     </div>
   );
 }
@@ -755,7 +765,13 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                     "xpPerSlotHour"
                   ].map((metricId) => (
                     <article key={metricId} className="dashboardChartCard">
-                      <h3>{getChartMetricLabel(metricId)}</h3>
+                      <h3 className="metricChartTitle">
+                        <img src={getChartMetricIcon(metricId)} alt="" />
+                        {getChartMetricLabel(metricId).includes("/Slot-h") && (
+                          <img src={clockIconUrl} alt="" />
+                        )}
+                        <span>{getChartMetricLabel(metricId)}</span>
+                      </h3>
                       <ComparisonChart comparisons={rangeComparisons} chartMetric={metricId} />
                     </article>
                   ))}
