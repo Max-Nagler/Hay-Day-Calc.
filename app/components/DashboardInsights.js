@@ -14,7 +14,6 @@ const fishingSlotCosts = { 3: 10, 4: 20, 5: 45, 6: 90, 7: 130, 8: 260, 9: 415 };
 const fishingBuildingNames = ["Angelplatz", "Fischernetzmacher", "Hummerbecken", "Entensalon"];
 const coinIconUrl = "https://static.wikia.nocookie.net/hayday/images/f/f0/Coins.png/revision/latest/scale-to-width-down/25?cb=20160223180814";
 const xpIconUrl = "https://static.wikia.nocookie.net/hayday/images/e/e1/Experience.png/revision/latest/scale-to-width-down/25?cb=20160312141717";
-const breadIconUrl = "https://static.wikia.nocookie.net/hayday/images/0/03/Bread.png/revision/latest/scale-to-width-down/25?cb=20160223180130";
 
 function formatNumber(value) {
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(
@@ -57,7 +56,6 @@ function getMetricTotal(result, mode) {
 }
 
 function getChartMetricValue(result, metric) {
-  if (metric === "products") return Number(result?.totals?.products || 0);
   if (metric === "xp") return Number(result?.totals?.xp || 0);
   if (metric === "coinsPerSlotHour") return calculateEfficiency(result, "coins");
   if (metric === "xpPerSlotHour") return calculateEfficiency(result, "xp");
@@ -65,7 +63,6 @@ function getChartMetricValue(result, metric) {
 }
 
 function getChartMetricLabel(metric) {
-  if (metric === "products") return "Produkte absolut";
   if (metric === "xp") return "XP absolut";
   if (metric === "coinsPerSlotHour") return "Coins/Slot-h";
   if (metric === "xpPerSlotHour") return "XP/Slot-h";
@@ -73,13 +70,11 @@ function getChartMetricLabel(metric) {
 }
 
 function getChartMetricDeltaLabel(metric) {
-  if (metric === "products") return "Produkte";
   if (metric === "xp" || metric === "xpPerSlotHour") return "XP";
   return "Coins";
 }
 
 function getChartMetricIcon(metric) {
-  if (metric === "products") return breadIconUrl;
   if (metric === "xp" || metric === "xpPerSlotHour") return xpIconUrl;
   return coinIconUrl;
 }
@@ -408,7 +403,6 @@ function ComparisonChart({ comparisons, chartMetric, showAllMetrics = false }) {
   const metricIds = showAllMetrics ? ["coins", "xp", "coinsPerSlotHour", "xpPerSlotHour"] : [chartMetric];
   const getComparisonMetric = (item, metricId) => {
     if (metricId === chartMetric) return item.metric.next;
-    if (metricId === "products") return item.products.next;
     if (metricId === "coins") return item.coins.next;
     if (metricId === "xp") return item.xp.next;
     if (metricId === "coinsPerSlotHour") return item.coinsPerSlotHour.next;
@@ -649,11 +643,8 @@ export default function DashboardInsights({ result, normalized, calculationSetti
               type="button"
               className={activePage === page.id ? "active" : ""}
               onClick={() => setActivePage(page.id)}
-              title={page.label}
             >
-              {page.id === "overview" && "📋"}
-              {page.id === "comparisons" && "📈"}
-              {page.id === "charts" && "📊"}
+              {page.label}
             </button>
           ))}
         </div>
@@ -692,9 +683,6 @@ export default function DashboardInsights({ result, normalized, calculationSetti
       {activePage === "comparisons" && (
         <div className="dashboardPage">
           <article className="dashboardChartCard">
-            <div className="dashboardChartTitleRow comparisonTopRow">
-              <div />
-            </div>
             <div className="comparisonControlsRow">
               <div className="comparisonRangeHeader">
                 <h3 className="comparisonRangeTitle">Stundenbereich</h3>
@@ -739,16 +727,13 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                 onClick={() => setComparisonModalOpen(true)}
                 title="Alle Kennzahlen"
               >
-                <img src={coinIconUrl} alt="" />
-                <img src={xpIconUrl} alt="" />
-                <img src={breadIconUrl} alt="" />
+                📊
               </button>
             </div>
             <div className="comparisonYAxisButtons" aria-label="Y-Achse wählen">
               {[
                 { id: "coins", iconUrl: coinIconUrl, label: "Coins" },
-                { id: "xp", iconUrl: xpIconUrl, label: "XP" },
-                { id: "products", iconUrl: breadIconUrl, label: "Produkte" }
+                { id: "xp", iconUrl: xpIconUrl, label: "XP" }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -760,7 +745,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                   <img src={item.iconUrl} alt="" />
                 </button>
               ))}
-              </div>
+            </div>
             <ComparisonChart comparisons={rangeComparisons} chartMetric={comparisonMetric} />
           </article>
           {comparisonModalOpen && (
@@ -775,8 +760,7 @@ export default function DashboardInsights({ result, normalized, calculationSetti
                 <div className="comparisonModalGrid">
                   {[
                     "coins",
-                    "xp",
-                    "products"
+                    "xp"
                   ].map((metricId) => (
                     <article key={metricId} className="dashboardChartCard">
                       <h3 className="metricChartTitle">
