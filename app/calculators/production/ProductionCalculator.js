@@ -37,7 +37,7 @@ function uniqueByName(items) {
 }
 
 function getEntryIngredients(entry, ingredientLookup) {
-  return Array.from(entry.ingredientsMap?.entries?.() || [])
+  return Array.from((entry.displayIngredientsMap || entry.ingredientsMap)?.entries?.() || [])
     .map(([key, amount]) => {
       const product = ingredientLookup[key];
 
