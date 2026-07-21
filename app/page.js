@@ -1148,7 +1148,8 @@ export default function Home() {
                                     Lv. {entry.product.level} · {formatMinutes(entry.effectiveTimeMin)}
                                     <br />
                                     {entry.slotsUsed}/{entry.slots} Slots ·{" "}
-                                    {Math.round(entry.totalCoins)} Coins
+                                    {Math.round(entry.totalCoins)} Coins ·{" "}
+                                    {Math.round(entry.totalXp)} XP
                                   </small>
                                 )}
                               </>
