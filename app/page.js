@@ -7,7 +7,7 @@ import { useHayDayData } from "../lib/data/useHayDayData";
 
 export default function Home() {
   const [activeCalculatorId, setActiveCalculatorId] = useState("production");
-  const { rawData, normalized, isLoading, loadError } = useHayDayData();
+  const { rawData, normalized, isLoading, isRefreshing, loadError, refreshData } = useHayDayData();
 
   const activeCalculator = useMemo(
     () => getCalculatorById(activeCalculatorId),
@@ -24,6 +24,8 @@ export default function Home() {
       isLoading={isLoading}
       loadError={loadError}
       syncedAt={rawData?.syncedAt}
+      isRefreshing={isRefreshing}
+      onRefreshData={refreshData}
     >
       <CalculatorComponent normalized={normalized} rawData={rawData} />
     </CalculatorShell>
