@@ -877,33 +877,37 @@ export default function ProductionCalculator({ normalized }) {
 
                 {(result.optimizationDebug?.buildingComparisons || []).map((comparison) => (
                   <section key={comparison.building} className="buildingComparisonDebug">
-                    <h3>{comparison.building}-Vergleich</h3>
+                    <h3>{comparison.building}-Slot-Kombinationen</h3>
                     <p>
                       <strong>Gewählte Lösung</strong>
                       <span>
-                        {Math.round(comparison.totalScore)} Wert · {formatDuration(comparison.totalMinutes)} / {formatDuration(comparison.capacityMinutes)} belegt
+                        {Math.round(comparison.chosenCombination?.totalCoins || 0)} Coins · {Number(comparison.chosenCombination?.coinsPerSlot || 0).toFixed(1)} Coins/Slot
+                      </span>
+                      <span>
+                        {comparison.chosenCombination?.usedSlots || 0}/{comparison.chosenCombination?.slotCapacity || 0} Slots · {formatDuration(comparison.chosenCombination?.totalMinutes || 0)} / {formatDuration(comparison.chosenCombination?.capacityMinutes || 0)}
                       </span>
                       <span>{comparison.reason}</span>
                     </p>
 
-                    {(comparison.chosen || []).map((item) => (
-                      <p key={`chosen-${item.product}`}>
-                        <strong>{item.amount}× {item.product}</strong>
-                        <span>
-                          {Math.round(item.score)} Wert · {formatDuration(item.buildingMinutes)} {comparison.building}-Zeit · Effizienz {Number(item.efficiency || 0).toFixed(2)}
-                        </span>
-                        <span>Zwischenprodukte: {item.intermediates?.length ? item.intermediates.join(", ") : "keine"}</span>
+                    {(comparison.chosenCombination?.orders || []).map((order, index) => (
+                      <p key={`chosen-order-${comparison.building}-${index}`}>
+                        <strong>Slot {index + 1}: {order.product}</strong>
+                        <span>{order.role} · {formatDuration(order.minutes)} · {order.coins} Coins</span>
+                        <span>Zwischenprodukte: {order.intermediates?.length ? order.intermediates.join(", ") : "keine"}</span>
                       </p>
                     ))}
 
-                    <h3>Top-10 Alternativen</h3>
-                    {(comparison.topAlternatives || []).map((item) => (
-                      <p key={`alternative-${item.product}`}>
-                        <strong>{item.product}</strong>
+                    <h3>Top-10 Kombinationen</h3>
+                    {(comparison.topCombinations || []).map((combo, index) => (
+                      <p key={`combo-${comparison.building}-${index}`}>
+                        <strong>{combo.products.join(" + ")}</strong>
                         <span>
-                          {Math.round(item.score)} Wert · {formatDuration(item.buildingMinutes)} {comparison.building}-Zeit · Effizienz {Number(item.efficiency || 0).toFixed(2)}
+                          {Math.round(combo.totalCoins)} Coins · {Number(combo.coinsPerSlot || 0).toFixed(1)} Coins/Slot · {combo.usedSlots}/{combo.slotCapacity} Slots
                         </span>
-                        <span>Zwischenprodukte: {item.intermediates?.length ? item.intermediates.join(", ") : "keine"}</span>
+                        <span>{formatDuration(combo.totalMinutes)} / {formatDuration(combo.capacityMinutes)} · {combo.reason}</span>
+                        <span>
+                          Slots: {combo.orders.map((order) => `${order.product} (${formatDuration(order.minutes)}, ${order.role})`).join(" | ")}
+                        </span>
                       </p>
                     ))}
                   </section>
