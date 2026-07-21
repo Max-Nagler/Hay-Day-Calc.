@@ -869,11 +869,45 @@ export default function ProductionCalculator({ normalized }) {
                     <p key={item.building}>
                       <strong>{item.building}</strong>
                       <span>
-                        {Math.round(item.minutes)}/{Math.round(item.capacityMinutes)} min · {item.slots}/{item.slotCapacity} Slots
+                        {formatDuration(item.minutes)}/{formatDuration(item.capacityMinutes)} · {item.slots}/{item.slotCapacity} Slots
                       </span>
                     </p>
                   ))}
                 </section>
+
+                {(result.optimizationDebug?.buildingComparisons || []).map((comparison) => (
+                  <section key={comparison.building} className="buildingComparisonDebug">
+                    <h3>{comparison.building}-Vergleich</h3>
+                    <p>
+                      <strong>Gewählte Lösung</strong>
+                      <span>
+                        {Math.round(comparison.totalScore)} Wert · {formatDuration(comparison.totalMinutes)} / {formatDuration(comparison.capacityMinutes)} belegt
+                      </span>
+                      <span>{comparison.reason}</span>
+                    </p>
+
+                    {(comparison.chosen || []).map((item) => (
+                      <p key={`chosen-${item.product}`}>
+                        <strong>{item.amount}× {item.product}</strong>
+                        <span>
+                          {Math.round(item.score)} Wert · {formatDuration(item.buildingMinutes)} {comparison.building}-Zeit · Effizienz {Number(item.efficiency || 0).toFixed(2)}
+                        </span>
+                        <span>Zwischenprodukte: {item.intermediates?.length ? item.intermediates.join(", ") : "keine"}</span>
+                      </p>
+                    ))}
+
+                    <h3>Top-10 Alternativen</h3>
+                    {(comparison.topAlternatives || []).map((item) => (
+                      <p key={`alternative-${item.product}`}>
+                        <strong>{item.product}</strong>
+                        <span>
+                          {Math.round(item.score)} Wert · {formatDuration(item.buildingMinutes)} {comparison.building}-Zeit · Effizienz {Number(item.efficiency || 0).toFixed(2)}
+                        </span>
+                        <span>Zwischenprodukte: {item.intermediates?.length ? item.intermediates.join(", ") : "keine"}</span>
+                      </p>
+                    ))}
+                  </section>
+                ))}
               </div>
             </details>
           </section>
