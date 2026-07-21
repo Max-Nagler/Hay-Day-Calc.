@@ -782,7 +782,11 @@ export default function ProductionCalculator({ normalized }) {
                             <ProductIcon item={entry.product} size="large" />
                             <strong>{entry.amount}×</strong>
                             <span>{entry.product.name}</span>
-                            <small>Lv. {entry.product.level} · {entry.slotsUsed}/{entry.slots} Slots</small>
+                            <small>
+                              {entry.role === "intermediate" ? "Zwischenprodukt" : "Endprodukt"}
+                              <br />
+                              {Math.round(entry.ownTimeMin)} min · {entry.slotsUsed}/{entry.slots} Slots · {entry.totalCoins} Coins
+                            </small>
                           </article>
                         ))}
                       </div>
@@ -792,6 +796,58 @@ export default function ProductionCalculator({ normalized }) {
               ) : (
                 <p className="empty">Keine passenden Produkte gefunden.</p>
               )}
+            </details>
+
+            <details className="panel compactPanel">
+              <summary>Optimierungs-Debug</summary>
+
+              <div className="optimizationDebugGrid">
+                <section>
+                  <h3>Gewählt</h3>
+                  {(result.optimizationDebug?.chosen || []).length ? (
+                    result.optimizationDebug.chosen.map((item) => (
+                      <p key={item.product}>
+                        <strong>{item.amount}× {item.product}</strong>
+                        <span>{item.reason}</span>
+                      </p>
+                    ))
+                  ) : (
+                    <p className="empty">Keine gewählten Produkte.</p>
+                  )}
+                </section>
+
+                <section>
+                  <h3>Top-Kandidaten</h3>
+                  {(result.optimizationDebug?.topCandidates || []).slice(0, 12).map((item) => (
+                    <p key={item.product}>
+                      <strong>{item.product}</strong>
+                      <span>{Math.round(item.score)} Wert · Effizienz {Number(item.efficiency || 0).toFixed(2)}</span>
+                    </p>
+                  ))}
+                </section>
+
+                <section>
+                  <h3>Verworfen / Engpässe</h3>
+                  {(result.optimizationDebug?.rejected || []).slice(0, 16).map((item, index) => (
+                    <p key={`${item.product}-${index}`}>
+                      <strong>{item.product}</strong>
+                      <span>{item.reason}</span>
+                    </p>
+                  ))}
+                </section>
+
+                <section>
+                  <h3>Gebäude-Auslastung</h3>
+                  {(result.optimizationDebug?.buildingUsage || []).map((item) => (
+                    <p key={item.building}>
+                      <strong>{item.building}</strong>
+                      <span>
+                        {Math.round(item.minutes)}/{Math.round(item.capacityMinutes)} min · {item.slots}/{item.slotCapacity} Slots
+                      </span>
+                    </p>
+                  ))}
+                </section>
+              </div>
             </details>
           </section>
         </div>
