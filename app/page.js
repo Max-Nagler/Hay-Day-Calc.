@@ -840,7 +840,7 @@ export default function Home() {
             </div>
           </details>
 
-          <details open className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
+          <details className="panel compactPanel" onToggle={scheduleSettingsColumnHeightUpdate}>
             <summary>Grunddaten</summary>
 
             <div className="modeSegment">
@@ -905,7 +905,6 @@ export default function Home() {
           </details>
 
           <details
-            open={baseSettingsComplete}
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
             onToggle={scheduleSettingsColumnHeightUpdate}
           >
@@ -926,7 +925,6 @@ export default function Home() {
           </details>
 
           <details
-            open={baseSettingsComplete}
             className={baseSettingsComplete ? "panel compactPanel" : "panel compactPanel disabled"}
             onToggle={scheduleSettingsColumnHeightUpdate}
           >
