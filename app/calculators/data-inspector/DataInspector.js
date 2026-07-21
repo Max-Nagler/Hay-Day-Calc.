@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import "./dataInspector.css";
 
 function formatValue(value) {
@@ -12,6 +12,36 @@ function formatValue(value) {
 
 function statusClass(value) {
   return value ? "ok" : "missing";
+}
+
+function normalizeSearch(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function matchesSearch(item, search) {
+  const query = normalizeSearch(search);
+  if (!query) return true;
+
+  return normalizeSearch(JSON.stringify(item)).includes(query);
+}
+
+function SearchField({ label, value, onChange, resultCount }) {
+  return (
+    <div className="tableSearchRow">
+      <label>
+        <span>{label}</span>
+        <input
+          type="search"
+          placeholder="Suchen…"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </label>
+      <small>{resultCount} Treffer</small>
+    </div>
+  );
 }
 
 function buildRecipeGroups(recipes) {
@@ -36,14 +66,17 @@ function buildRecipeGroups(recipes) {
   }
 
   return Array.from(grouped.values())
-    .map((group) => ({
-      ...group,
-      ingredients: group.ingredients.sort((a, b) => a.name.localeCompare(b.name, "de")),
-      ingredientSummary: group.ingredients
-        .sort((a, b) => a.name.localeCompare(b.name, "de"))
-        .map((ingredient) => `${ingredient.amount}× ${ingredient.name}`)
-        .join(", ")
-    }))
+    .map((group) => {
+      const ingredients = group.ingredients.sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+      return {
+        ...group,
+        ingredients,
+        ingredientSummary: ingredients
+          .map((ingredient) => `${ingredient.amount}× ${ingredient.name}`)
+          .join(", ")
+      };
+    })
     .sort((a, b) => a.product.localeCompare(b.product, "de"));
 }
 
@@ -51,7 +84,29 @@ export default function DataInspector({ normalized, rawData }) {
   const products = normalized?.products || [];
   const recipes = normalized?.recipes || [];
   const buildings = normalized?.buildings || [];
+
+  const [productSearch, setProductSearch] = useState("");
+  const [recipeGroupSearch, setRecipeGroupSearch] = useState("");
+  const [buildingSearch, setBuildingSearch] = useState("");
+  const [recipeSearch, setRecipeSearch] = useState("");
+
   const recipeGroups = useMemo(() => buildRecipeGroups(recipes), [recipes]);
+  const filteredProducts = useMemo(
+    () => products.filter((product) => matchesSearch(product, productSearch)),
+    [products, productSearch]
+  );
+  const filteredRecipeGroups = useMemo(
+    () => recipeGroups.filter((group) => matchesSearch(group, recipeGroupSearch)),
+    [recipeGroups, recipeGroupSearch]
+  );
+  const filteredBuildings = useMemo(
+    () => buildings.filter((building) => matchesSearch(building, buildingSearch)),
+    [buildings, buildingSearch]
+  );
+  const filteredRecipes = useMemo(
+    () => recipes.filter((recipe) => matchesSearch(recipe, recipeSearch)),
+    [recipes, recipeSearch]
+  );
 
   return (
     <section className="dataInspector">
@@ -75,6 +130,7 @@ export default function DataInspector({ normalized, rawData }) {
 
       <details className="panel dataInspectorPanel" open>
         <summary>Produkte prüfen</summary>
+        <SearchField label="Produkte filtern" value={productSearch} onChange={setProductSearch} resultCount={filteredProducts.length} />
         <div className="tableScroller">
           <table className="dataInspectorTable">
             <thead>
@@ -89,7 +145,7 @@ export default function DataInspector({ normalized, rawData }) {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr key={product.id || product.key}>
                   <td><strong>{product.name}</strong></td>
                   <td className={statusClass(product.building)}>{formatValue(product.building)}</td>
@@ -109,6 +165,7 @@ export default function DataInspector({ normalized, rawData }) {
 
       <details className="panel dataInspectorPanel" open>
         <summary>Gesamtrezepte prüfen</summary>
+        <SearchField label="Gesamtrezepte filtern" value={recipeGroupSearch} onChange={setRecipeGroupSearch} resultCount={filteredRecipeGroups.length} />
         <div className="tableScroller">
           <table className="dataInspectorTable recipeSummaryTable">
             <thead>
@@ -120,7 +177,7 @@ export default function DataInspector({ normalized, rawData }) {
               </tr>
             </thead>
             <tbody>
-              {recipeGroups.map((group) => (
+              {filteredRecipeGroups.map((group) => (
                 <tr key={group.productKey}>
                   <td className={statusClass(group.product)}><strong>{formatValue(group.product)}</strong></td>
                   <td className={statusClass(group.ingredients.length)}>
@@ -143,6 +200,7 @@ export default function DataInspector({ normalized, rawData }) {
 
       <details className="panel dataInspectorPanel">
         <summary>Gebäude prüfen</summary>
+        <SearchField label="Gebäude filtern" value={buildingSearch} onChange={setBuildingSearch} resultCount={filteredBuildings.length} />
         <div className="tableScroller">
           <table className="dataInspectorTable">
             <thead>
@@ -156,7 +214,7 @@ export default function DataInspector({ normalized, rawData }) {
               </tr>
             </thead>
             <tbody>
-              {buildings.map((building) => (
+              {filteredBuildings.map((building) => (
                 <tr key={building.id || building.key}>
                   <td><strong>{building.name}</strong></td>
                   <td className={statusClass(building.slots)}>{formatValue(building.slots)}</td>
@@ -175,6 +233,7 @@ export default function DataInspector({ normalized, rawData }) {
 
       <details className="panel dataInspectorPanel">
         <summary>Einzelne Rezeptzeilen prüfen</summary>
+        <SearchField label="Rezeptzeilen filtern" value={recipeSearch} onChange={setRecipeSearch} resultCount={filteredRecipes.length} />
         <div className="tableScroller">
           <table className="dataInspectorTable">
             <thead>
@@ -187,7 +246,7 @@ export default function DataInspector({ normalized, rawData }) {
               </tr>
             </thead>
             <tbody>
-              {recipes.map((recipe) => (
+              {filteredRecipes.map((recipe) => (
                 <tr key={recipe.id || `${recipe.productKey}-${recipe.ingredientKey}`}>
                   <td className={statusClass(recipe.product)}><strong>{formatValue(recipe.product)}</strong></td>
                   <td className={statusClass(recipe.ingredient)}>{formatValue(recipe.ingredient)}</td>
