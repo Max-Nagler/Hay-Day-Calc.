@@ -1,0 +1,24 @@
+.equalSettingsGrid .equalBuildingsPanel {
+  height: min(684px, calc(100vh - 158px));
+  min-height: 510px;
+}
+
+.equalSettingsGrid .settingsColumn {
+  grid-auto-rows: max-content;
+}
+
+.equalSettingsGrid .calculateButton {
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--green) 18%, transparent);
+}
+
+.equalSettingsGrid .output {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 960px) {
+  .equalBuildingsPanel,
+  .equalSettingsGrid .equalBuildingsPanel {
+    height: auto;
+    min-height: 0;
+  }
+}
