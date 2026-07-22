@@ -206,6 +206,7 @@ function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }
       topCandidates: result.optimizationDebug?.topCandidates || [],
       buildingUsage: result.optimizationDebug?.buildingUsage || [],
       materialFlow: result.optimizationDebug?.materialFlow || [],
+      combinationDebug: result.optimizationDebug?.combinationDebug,
       buildingComparisons
     },
     buildingComparisons,
@@ -225,6 +226,19 @@ function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }
         sold: item.sold,
         usedAsIntermediate: item.usedAsIntermediate
       })),
+      combinationDebug: result.optimizationDebug?.combinationDebug
+        ? {
+            globalSearch: result.optimizationDebug.combinationDebug.globalSearch,
+            buildings: (result.optimizationDebug.combinationDebug.buildings || []).map((building) => ({
+              building: building.building,
+              candidateProducts: building.candidateProducts,
+              candidateCombinations: building.candidateCombinations,
+              keptCombinations: building.keptCombinations,
+              bestLocalCombination: building.bestLocalCombination,
+              selectedCombination: building.selectedCombination
+            }))
+          }
+        : null,
       betterFeasibleAlternatives
     }
   };
