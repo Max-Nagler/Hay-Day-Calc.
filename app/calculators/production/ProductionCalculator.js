@@ -397,6 +397,7 @@ export default function ProductionCalculator({ normalized }) {
   const [profileName, setProfileName] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [debugCopyStatus, setDebugCopyStatus] = useState("");
+  const [debugJsonExportMode, setDebugJsonExportMode] = useState("compact");
 
   const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
 
@@ -779,28 +780,41 @@ export default function ProductionCalculator({ normalized }) {
     );
   }
 
-  function downloadDebugJson() {
+  function buildJsonExport() {
+    const compactDebug = buildCompactDebugJson({ result, calculationSettings, ingredientLookup });
+
+    if (debugJsonExportMode === "summary") {
+      return {
+        settings: compactDebug.settings,
+        totals: compactDebug.totals,
+        summary: compactDebug.summary,
+        buildingComparisons: compactDebug.buildingComparisons.map((comparison) => ({
+          building: comparison.building,
+          chosenCoins: comparison.chosenCombination?.totalCoins || 0,
+          hasBetterFeasibleAlternative: comparison.hasBetterFeasibleAlternative,
+          betterAlternatives: (comparison.topCombinations || [])
+            .filter((combo) => combo.beatsChosen)
+            .map((combo) => ({
+              products: combo.products,
+              totalCoins: combo.totalCoins,
+              delta: Number(combo.totalCoins || 0) - Number(comparison.chosenCombination?.totalCoins || 0),
+              rejectionReasons: combo.rejectionReasons,
+              replacementUsage: combo.replacementUsage
+            }))
+        }))
+      };
+    }
+
+    return compactDebug;
+  }
+
+  function copyDebugJson() {
     if (!result?.optimizationDebug) return;
 
-    const json = JSON.stringify(
-      buildCompactDebugJson({ result, calculationSettings, ingredientLookup }),
-      null,
-      2
+    copyTextToClipboard(
+      JSON.stringify(buildJsonExport(), null, 2),
+      debugJsonExportMode === "summary" ? "JSON-Summary kopiert" : "Debug JSON kopiert"
     );
-    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-
-    link.href = url;
-    link.download = `hay-day-calc-debug-${timestamp}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-
-    setDebugCopyStatus("Debug JSON heruntergeladen");
-    window.setTimeout(() => setDebugCopyStatus(""), 1800);
   }
 
   function moveIngredientOverlay(event) {
@@ -1135,8 +1149,15 @@ export default function ProductionCalculator({ normalized }) {
                   <button type="button" onClick={copyDebugMarkdown}>
                     Debug kopieren
                   </button>
-                  <button type="button" onClick={downloadDebugJson}>
-                    Debug JSON herunterladen
+                  <label className="debugExportMode">
+                    <span>JSON Exportmodus</span>
+                    <select value={debugJsonExportMode} onChange={(event) => setDebugJsonExportMode(event.target.value)}>
+                      <option value="compact">Kompakt</option>
+                      <option value="summary">Nur Summary</option>
+                    </select>
+                  </label>
+                  <button type="button" onClick={copyDebugJson}>
+                    Debug JSON kopieren
                   </button>
                   {debugCopyStatus && <span>{debugCopyStatus}</span>}
                 </div>
