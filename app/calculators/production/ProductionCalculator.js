@@ -193,14 +193,38 @@ function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }
       intermediates: mapCompactItemsFromMap(entry.intermediateMap, ingredientLookup)
     })),
     optimizationDebug: {
+      solverStatus: result.optimizationDebug?.solverStatus,
+      objectiveValue: result.optimizationDebug?.objectiveValue,
+      variablesCount: result.optimizationDebug?.variablesCount,
+      constraintsCount: result.optimizationDebug?.constraintsCount,
+      visitedNodes: result.optimizationDebug?.raw?.visitedNodes,
+      maxNodes: result.optimizationDebug?.raw?.maxNodes,
+      validation: result.optimizationDebug?.validation,
+      infeasibleReasons: result.optimizationDebug?.infeasibleReasons || [],
       chosen: result.optimizationDebug?.chosen || [],
       rejected: result.optimizationDebug?.rejected || [],
       topCandidates: result.optimizationDebug?.topCandidates || [],
       buildingUsage: result.optimizationDebug?.buildingUsage || [],
+      materialFlow: result.optimizationDebug?.materialFlow || [],
       buildingComparisons
     },
     buildingComparisons,
     summary: {
+      solverStatus: result.optimizationDebug?.solverStatus,
+      objectiveValue: result.optimizationDebug?.objectiveValue,
+      variablesCount: result.optimizationDebug?.variablesCount,
+      constraintsCount: result.optimizationDebug?.constraintsCount,
+      visitedNodes: result.optimizationDebug?.raw?.visitedNodes,
+      maxNodes: result.optimizationDebug?.raw?.maxNodes,
+      validationFeasible: result.optimizationDebug?.validation?.feasible,
+      infeasibleReasons: result.optimizationDebug?.infeasibleReasons || [],
+      buildingUsage: result.optimizationDebug?.buildingUsage || [],
+      materialFlow: (result.optimizationDebug?.materialFlow || []).map((item) => ({
+        product: item.product,
+        made: item.made,
+        sold: item.sold,
+        usedAsIntermediate: item.usedAsIntermediate
+      })),
       betterFeasibleAlternatives
     }
   };
@@ -818,6 +842,13 @@ export default function ProductionCalculator({ normalized }) {
         settings: compactDebug.settings,
         totals: compactDebug.totals,
         summary: compactDebug.summary,
+        productionPlan: compactDebug.productionPlan.map((entry) => ({
+          building: entry.building,
+          product: entry.product,
+          amount: entry.amount,
+          role: entry.role,
+          coins: entry.totalCoins
+        })),
         buildingComparisons: compactDebug.buildingComparisons.map((comparison) => ({
           building: comparison.building,
           chosenCoins: comparison.chosenCombination?.totalCoins || 0,
