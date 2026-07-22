@@ -756,10 +756,21 @@ export default function ProductionCalculator({ normalized }) {
         })
       });
 
-      const payload = await response.json();
+      const responseText = await response.text();
+      let payload = null;
 
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || "Optimierung fehlgeschlagen.");
+      try {
+        payload = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        throw new Error(
+          response.ok
+            ? "Die Optimize-API hat keine gültige JSON-Antwort geliefert."
+            : `Optimize-API Fehler ${response.status}: ${responseText.slice(0, 180)}`
+        );
+      }
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Optimierung fehlgeschlagen.");
       }
 
       setResult(payload.result);
