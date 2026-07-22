@@ -878,6 +878,28 @@ export default function ProductionCalculator({ normalized }) {
     );
   }
 
+  function downloadDebugTxt() {
+    if (!result?.optimizationDebug) return;
+
+    const payload = {
+      markdown: buildDebugMarkdown({ result, calculationSettings, ingredientLookup }),
+      compactJson: buildCompactDebugJson({ result, calculationSettings, ingredientLookup }),
+      fullResult: result
+    };
+    const content = JSON.stringify(payload, null, 2);
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `hay-day-debug-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setDebugCopyStatus("Debug TXT heruntergeladen");
+    window.setTimeout(() => setDebugCopyStatus(""), 1800);
+  }
+
   function moveIngredientOverlay(event) {
     setHoverIngredients((current) => current && { ...current, x: event.clientX, y: event.clientY });
   }
@@ -1225,6 +1247,9 @@ export default function ProductionCalculator({ normalized }) {
                   </label>
                   <button type="button" onClick={copyDebugJson}>
                     Debug JSON kopieren
+                  </button>
+                  <button type="button" onClick={downloadDebugTxt}>
+                    Debug TXT herunterladen
                   </button>
                   {debugCopyStatus && <span>{debugCopyStatus}</span>}
                 </div>
