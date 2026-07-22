@@ -4,7 +4,7 @@ import DashboardInsights from "../../components/DashboardInsights";
 import "../../components/dashboard.css";
 import "./production.css";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { calculateProductionPlan, getAvailableBuildings } from "./productionEngine";
+import { getAvailableBuildings } from "./productionEngine";
 import ProductIcon from "../../components/ProductIcon";
 import BuildingIcon from "../../components/BuildingIcon";
 import { productionCalculatorConfig } from "./productionConfig";
@@ -391,6 +391,8 @@ export default function ProductionCalculator({ normalized }) {
   const [calculationSettings, setCalculationSettings] = useState(null);
   const [calculationStarted, setCalculationStarted] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState("");
+  const [result, setResult] = useState(null);
   const [hoverIngredients, setHoverIngredients] = useState(null);
   const [settingsColumnHeight, setSettingsColumnHeight] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -569,6 +571,8 @@ export default function ProductionCalculator({ normalized }) {
   useEffect(() => {
     setCalculationStarted(false);
     setCalculationSettings(null);
+    setCalculationError("");
+    setResult(null);
   }, [
     mode,
     level,
@@ -579,16 +583,6 @@ export default function ProductionCalculator({ normalized }) {
     excludedIngredientNames,
     allowedBuildings
   ]);
-
-  const result = useMemo(() => {
-    if (!calculationStarted || !calculationSettings) return null;
-
-    return calculateProductionPlan({
-      products: normalized.products,
-      recipes: normalized.recipes,
-      ...calculationSettings
-    });
-  }, [normalized.products, normalized.recipes, calculationStarted, calculationSettings]);
 
   useEffect(() => {
     if (!result) return;
@@ -728,27 +722,52 @@ export default function ProductionCalculator({ normalized }) {
     setProfileName("");
   }
 
-  function startCalculation() {
+  async function startCalculation() {
     if (!baseSettingsComplete || allowedBuildings.length === 0 || isCalculating) return;
+
+    const nextSettings = {
+      mode,
+      level,
+      hours,
+      globalSlots,
+      slotsByBuilding,
+      defaultSlotsByBuilding,
+      allowedBuildings,
+      intermediateMustBeProduced,
+      excludedIngredientNames
+    };
 
     setIsCalculating(true);
     setCalculationStarted(false);
-    setCalculationSettings(null);
+    setCalculationSettings(nextSettings);
+    setCalculationError("");
+    setResult(null);
 
-    window.setTimeout(() => {
-      setCalculationSettings({
-        mode,
-        level,
-        hours,
-        globalSlots,
-        slotsByBuilding,
-        defaultSlotsByBuilding,
-        allowedBuildings,
-        intermediateMustBeProduced,
-        excludedIngredientNames
+    try {
+      const response = await fetch("/api/optimize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          products: normalized.products,
+          recipes: normalized.recipes,
+          settings: nextSettings
+        })
       });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Optimierung fehlgeschlagen.");
+      }
+
+      setResult(payload.result);
       setCalculationStarted(true);
-    }, 30);
+    } catch (error) {
+      setCalculationError(error.message || "Optimierung fehlgeschlagen.");
+      setIsCalculating(false);
+    }
   }
 
   function showIngredientOverlay(event, entry) {
@@ -1024,6 +1043,12 @@ export default function ProductionCalculator({ normalized }) {
           {baseSettingsComplete && allowedBuildings.length === 0 && (
             <p className="helperText inlineHelper">
               Wähle mindestens ein Gebäude aus.
+            </p>
+          )}
+
+          {calculationError && (
+            <p className="helperText inlineHelper errorText">
+              {calculationError}
             </p>
           )}
         </div>
