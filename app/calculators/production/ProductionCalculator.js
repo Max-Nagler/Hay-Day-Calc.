@@ -119,6 +119,7 @@ function sanitizeBuildingComparisons(buildingComparisons = []) {
         rejectionReasons: combo.rejectionReasons || [],
         reason: combo.reason || "",
         globalUsage: combo.globalUsage || [],
+        replacementUsage: combo.replacementUsage || [],
         beatsChosen
       };
     });
@@ -778,17 +779,28 @@ export default function ProductionCalculator({ normalized }) {
     );
   }
 
-  function copyDebugJson() {
+  function downloadDebugJson() {
     if (!result?.optimizationDebug) return;
 
-    copyTextToClipboard(
-      JSON.stringify(
-        buildCompactDebugJson({ result, calculationSettings, ingredientLookup }),
-        null,
-        2
-      ),
-      "Debug JSON kopiert"
+    const json = JSON.stringify(
+      buildCompactDebugJson({ result, calculationSettings, ingredientLookup }),
+      null,
+      2
     );
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    link.href = url;
+    link.download = `hay-day-calc-debug-${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    setDebugCopyStatus("Debug JSON heruntergeladen");
+    window.setTimeout(() => setDebugCopyStatus(""), 1800);
   }
 
   function moveIngredientOverlay(event) {
@@ -1123,8 +1135,8 @@ export default function ProductionCalculator({ normalized }) {
                   <button type="button" onClick={copyDebugMarkdown}>
                     Debug kopieren
                   </button>
-                  <button type="button" onClick={copyDebugJson}>
-                    Debug JSON kopieren
+                  <button type="button" onClick={downloadDebugJson}>
+                    Debug JSON herunterladen
                   </button>
                   {debugCopyStatus && <span>{debugCopyStatus}</span>}
                 </div>
