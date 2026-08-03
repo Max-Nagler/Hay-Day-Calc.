@@ -170,7 +170,11 @@ function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }
       slotsByBuilding: calculationSettings?.slotsByBuilding || {},
       allowedBuildings: calculationSettings?.allowedBuildings || [],
       intermediateMustBeProduced: Boolean(calculationSettings?.intermediateMustBeProduced),
-      excludedIngredientNames: calculationSettings?.excludedIngredientNames || []
+      excludedIngredientNames: calculationSettings?.excludedIngredientNames || [],
+      optimizationMode: calculationSettings?.optimizationMode || "fast",
+      solverMode: calculationSettings?.solverMode || "fast",
+      beamWidth: calculationSettings?.beamWidth,
+      maxRuntimeMs: calculationSettings?.maxRuntimeMs
     },
     totals: {
       coins: result.totals?.coins || 0,
@@ -438,6 +442,7 @@ export default function ProductionCalculator({ normalized }) {
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [debugCopyStatus, setDebugCopyStatus] = useState("");
   const [debugJsonExportMode, setDebugJsonExportMode] = useState("compact");
+  const [optimizationMode, setOptimizationMode] = useState("fast");
 
   const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
 
@@ -619,7 +624,8 @@ export default function ProductionCalculator({ normalized }) {
     slotsByBuilding,
     intermediateMustBeProduced,
     excludedIngredientNames,
-    allowedBuildings
+    allowedBuildings,
+    optimizationMode
   ]);
 
   useEffect(() => {
@@ -709,7 +715,8 @@ export default function ProductionCalculator({ normalized }) {
       intermediateMustBeProduced,
       excludedIngredientNames,
       allowedBuildings,
-      userChangedBuildings
+      userChangedBuildings,
+      optimizationMode
     };
   }
 
@@ -750,6 +757,7 @@ export default function ProductionCalculator({ normalized }) {
     setExcludedIngredientNames(settings.excludedIngredientNames || []);
     setAllowedBuildings(settings.allowedBuildings || []);
     setUserChangedBuildings(Boolean(settings.userChangedBuildings));
+    setOptimizationMode(settings.optimizationMode || "fast");
   }
 
   function deleteProfile() {
@@ -772,7 +780,13 @@ export default function ProductionCalculator({ normalized }) {
       defaultSlotsByBuilding,
       allowedBuildings,
       intermediateMustBeProduced,
-      excludedIngredientNames
+      excludedIngredientNames,
+      optimizationMode,
+      ...(optimizationMode === "proof"
+        ? { solverMode: "proof", beamWidth: 2000, maxRuntimeMs: 25000 }
+        : optimizationMode === "balanced"
+          ? { solverMode: "balanced", beamWidth: 200, maxRuntimeMs: 7000 }
+          : { solverMode: "fast", beamWidth: 80, maxRuntimeMs: 3500 })
     };
 
     setIsCalculating(true);
@@ -1019,6 +1033,21 @@ export default function ProductionCalculator({ normalized }) {
                 <input type="range" min="1" max="10" step="1" value={globalSlots} onChange={(event) => setGlobalSlots(Number(event.target.value))} />
               </label>
             </div>
+
+            <label className="field compactField">
+              <span>Optimierungsmodus</span>
+              <select value={optimizationMode} onChange={(event) => setOptimizationMode(event.target.value)}>
+                <option value="fast">Schnell</option>
+                <option value="balanced">Ausgewogen</option>
+                <option value="proof">Optimum prüfen</option>
+              </select>
+            </label>
+
+            {optimizationMode === "proof" && (
+              <p className="helperText inlineHelper">
+                Proof-Modus läuft über die API und kann bis zu ca. 25 Sekunden dauern.
+              </p>
+            )}
 
             {!baseSettingsComplete && <p className="helperText inlineHelper">Wähle einen Rechenmodus.</p>}
           </details>
