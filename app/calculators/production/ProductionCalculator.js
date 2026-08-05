@@ -172,7 +172,8 @@ function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }
       intermediateMustBeProduced: Boolean(calculationSettings?.intermediateMustBeProduced),
       excludedIngredientNames: calculationSettings?.excludedIngredientNames || [],
       beamWidth: calculationSettings?.beamWidth,
-      maxRuntimeMs: calculationSettings?.maxRuntimeMs
+      maxRuntimeMs: calculationSettings?.maxRuntimeMs,
+      maxCombinationsPerBuilding: calculationSettings?.maxCombinationsPerBuilding
     },
     totals: {
       coins: result.totals?.coins || 0,
@@ -264,6 +265,7 @@ function buildDebugMarkdown({ result, calculationSettings, ingredientLookup }) {
   lines.push(`- Ausgeschlossene Zutaten: ${formatList(calculationSettings?.excludedIngredientNames || [])}`);
   lines.push(`- Beam Width: ${calculationSettings?.beamWidth ?? "Standard"}`);
   lines.push(`- Max Runtime: ${calculationSettings?.maxRuntimeMs ?? "Standard"} ms`);
+  lines.push(`- Kombinationen pro Gebäude: ${calculationSettings?.maxCombinationsPerBuilding ?? "Standard"}`);
   lines.push("");
 
   lines.push("## Gesamtergebnis");
@@ -444,6 +446,7 @@ export default function ProductionCalculator({ normalized }) {
   const [debugJsonExportMode, setDebugJsonExportMode] = useState("compact");
   const [beamWidth, setBeamWidth] = useState(config.defaultState.beamWidth);
   const [maxRuntimeMs, setMaxRuntimeMs] = useState(config.defaultState.maxRuntimeMs);
+  const [maxCombinationsPerBuilding, setMaxCombinationsPerBuilding] = useState(config.defaultState.maxCombinationsPerBuilding);
 
   const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
 
@@ -627,7 +630,8 @@ export default function ProductionCalculator({ normalized }) {
     excludedIngredientNames,
     allowedBuildings,
     beamWidth,
-    maxRuntimeMs
+    maxRuntimeMs,
+    maxCombinationsPerBuilding
   ]);
 
   useEffect(() => {
@@ -719,7 +723,8 @@ export default function ProductionCalculator({ normalized }) {
       allowedBuildings,
       userChangedBuildings,
       beamWidth,
-      maxRuntimeMs
+      maxRuntimeMs,
+      maxCombinationsPerBuilding
     };
   }
 
@@ -762,6 +767,7 @@ export default function ProductionCalculator({ normalized }) {
     setUserChangedBuildings(Boolean(settings.userChangedBuildings));
     setBeamWidth(Number(settings.beamWidth || config.defaultState.beamWidth));
     setMaxRuntimeMs(Number(settings.maxRuntimeMs || config.defaultState.maxRuntimeMs));
+    setMaxCombinationsPerBuilding(Number(settings.maxCombinationsPerBuilding || config.defaultState.maxCombinationsPerBuilding));
   }
 
   function deleteProfile() {
@@ -786,7 +792,8 @@ export default function ProductionCalculator({ normalized }) {
       intermediateMustBeProduced,
       excludedIngredientNames,
       beamWidth,
-      maxRuntimeMs
+      maxRuntimeMs,
+      maxCombinationsPerBuilding
     };
 
     setIsCalculating(true);
@@ -1060,8 +1067,20 @@ export default function ProductionCalculator({ normalized }) {
               </label>
             </div>
 
+            <label className="field compactField">
+              <span>Kombinationen/Gebäude: {maxCombinationsPerBuilding}</span>
+              <input
+                type="range"
+                min="12"
+                max="60"
+                step="4"
+                value={maxCombinationsPerBuilding}
+                onChange={(event) => setMaxCombinationsPerBuilding(Number(event.target.value))}
+              />
+            </label>
+
             <p className="helperText inlineHelper">
-              Höhere Werte prüfen mehr Kombinationen, brauchen aber länger. Für Maximum-Checks z. B. Beam Width 200–300 und Runtime 10–15 s.
+              Höhere Werte prüfen mehr lokale Gebäude-Kombinationen, brauchen aber länger. Für Maximum-Checks z. B. Beam Width 200–300, Kombinationen/Gebäude 24–36 und Runtime 10–15 s.
             </p>
 
             {!baseSettingsComplete && <p className="helperText inlineHelper">Wähle einen Rechenmodus.</p>}
