@@ -10,7 +10,9 @@ export const productionCalculatorConfig = {
     intermediateMustBeProduced: false,
     excludedIngredientNames: [],
     allowedBuildings: [],
-    userChangedBuildings: false
+    userChangedBuildings: false,
+    beamWidth: 80,
+    maxRuntimeMs: 3500
   },
   modes: [
     { id: "coins", label: "Coins" },
