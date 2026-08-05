@@ -12,7 +12,8 @@ export const productionCalculatorConfig = {
     allowedBuildings: [],
     userChangedBuildings: false,
     beamWidth: 80,
-    maxRuntimeMs: 3500
+    maxRuntimeMs: 3500,
+    maxCombinationsPerBuilding: 24
   },
   modes: [
     { id: "coins", label: "Coins" },
