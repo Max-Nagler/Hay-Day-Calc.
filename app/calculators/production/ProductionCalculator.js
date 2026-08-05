@@ -170,7 +170,9 @@ function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }
       slotsByBuilding: calculationSettings?.slotsByBuilding || {},
       allowedBuildings: calculationSettings?.allowedBuildings || [],
       intermediateMustBeProduced: Boolean(calculationSettings?.intermediateMustBeProduced),
-      excludedIngredientNames: calculationSettings?.excludedIngredientNames || []
+      excludedIngredientNames: calculationSettings?.excludedIngredientNames || [],
+      beamWidth: calculationSettings?.beamWidth,
+      maxRuntimeMs: calculationSettings?.maxRuntimeMs
     },
     totals: {
       coins: result.totals?.coins || 0,
@@ -260,6 +262,8 @@ function buildDebugMarkdown({ result, calculationSettings, ingredientLookup }) {
   lines.push(`- Zwischenprodukte müssen hergestellt werden: ${calculationSettings?.intermediateMustBeProduced ? "ja" : "nein"}`);
   lines.push(`- Aktive Gebäude: ${formatList(calculationSettings?.allowedBuildings || [])}`);
   lines.push(`- Ausgeschlossene Zutaten: ${formatList(calculationSettings?.excludedIngredientNames || [])}`);
+  lines.push(`- Beam Width: ${calculationSettings?.beamWidth ?? "Standard"}`);
+  lines.push(`- Max Runtime: ${calculationSettings?.maxRuntimeMs ?? "Standard"} ms`);
   lines.push("");
 
   lines.push("## Gesamtergebnis");
@@ -438,6 +442,8 @@ export default function ProductionCalculator({ normalized }) {
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [debugCopyStatus, setDebugCopyStatus] = useState("");
   const [debugJsonExportMode, setDebugJsonExportMode] = useState("compact");
+  const [beamWidth, setBeamWidth] = useState(config.defaultState.beamWidth);
+  const [maxRuntimeMs, setMaxRuntimeMs] = useState(config.defaultState.maxRuntimeMs);
 
   const baseSettingsComplete = Boolean(mode) && level >= 1 && hours >= 1 && globalSlots >= 1;
 
@@ -619,7 +625,9 @@ export default function ProductionCalculator({ normalized }) {
     slotsByBuilding,
     intermediateMustBeProduced,
     excludedIngredientNames,
-    allowedBuildings
+    allowedBuildings,
+    beamWidth,
+    maxRuntimeMs
   ]);
 
   useEffect(() => {
@@ -709,7 +717,9 @@ export default function ProductionCalculator({ normalized }) {
       intermediateMustBeProduced,
       excludedIngredientNames,
       allowedBuildings,
-      userChangedBuildings
+      userChangedBuildings,
+      beamWidth,
+      maxRuntimeMs
     };
   }
 
@@ -750,6 +760,8 @@ export default function ProductionCalculator({ normalized }) {
     setExcludedIngredientNames(settings.excludedIngredientNames || []);
     setAllowedBuildings(settings.allowedBuildings || []);
     setUserChangedBuildings(Boolean(settings.userChangedBuildings));
+    setBeamWidth(Number(settings.beamWidth || config.defaultState.beamWidth));
+    setMaxRuntimeMs(Number(settings.maxRuntimeMs || config.defaultState.maxRuntimeMs));
   }
 
   function deleteProfile() {
@@ -772,7 +784,9 @@ export default function ProductionCalculator({ normalized }) {
       defaultSlotsByBuilding,
       allowedBuildings,
       intermediateMustBeProduced,
-      excludedIngredientNames
+      excludedIngredientNames,
+      beamWidth,
+      maxRuntimeMs
     };
 
     setIsCalculating(true);
@@ -1019,6 +1033,36 @@ export default function ProductionCalculator({ normalized }) {
                 <input type="range" min="1" max="10" step="1" value={globalSlots} onChange={(event) => setGlobalSlots(Number(event.target.value))} />
               </label>
             </div>
+
+            <div className="dualRange">
+              <label className="field compactField">
+                <span>Beam Width: {beamWidth}</span>
+                <input
+                  type="range"
+                  min="10"
+                  max="300"
+                  step="10"
+                  value={beamWidth}
+                  onChange={(event) => setBeamWidth(Number(event.target.value))}
+                />
+              </label>
+
+              <label className="field compactField">
+                <span>Max Runtime: {(maxRuntimeMs / 1000).toFixed(1)} s</span>
+                <input
+                  type="range"
+                  min="250"
+                  max="15000"
+                  step="250"
+                  value={maxRuntimeMs}
+                  onChange={(event) => setMaxRuntimeMs(Number(event.target.value))}
+                />
+              </label>
+            </div>
+
+            <p className="helperText inlineHelper">
+              Höhere Werte prüfen mehr Kombinationen, brauchen aber länger. Für Maximum-Checks z. B. Beam Width 200–300 und Runtime 10–15 s.
+            </p>
 
             {!baseSettingsComplete && <p className="helperText inlineHelper">Wähle einen Rechenmodus.</p>}
           </details>
