@@ -142,6 +142,93 @@ function sanitizeBuildingComparisons(buildingComparisons = []) {
   });
 }
 
+function compactProducts(products = []) {
+  return (products || []).map((item) => `${item.amount}× ${item.product || item.name || item.key}`).join(" + ");
+}
+
+function buildAiDebugSummary({ result, calculationSettings }) {
+  const debug = result.optimizationDebug || {};
+  const combinationDebug = debug.combinationDebug || {};
+  const raw = debug.raw || {};
+  const globalSearch = combinationDebug.globalSearch || {};
+  const localRepair = raw.localRepair || combinationDebug.localRepair || null;
+  const probeSearch = raw.probeSearch || combinationDebug.probeSearch || null;
+  const buildings = (combinationDebug.buildings || []).map((building) => ({
+    b: building.building,
+    cand: building.candidateCombinations,
+    kept: building.keptCombinations,
+    repair: building.repairCombinationsCount,
+    sel: compactProducts(building.selectedCombination?.products || []),
+    best: compactProducts(building.bestLocalCombination?.products || []),
+    selValue: building.selectedCombination?.value || 0,
+    bestValue: building.bestLocalCombination?.value || 0
+  }));
+
+  return {
+    s: {
+      mode: calculationSettings?.mode,
+      level: calculationSettings?.level,
+      h: calculationSettings?.hours,
+      slots: calculationSettings?.globalSlots,
+      customSlots: calculationSettings?.slotsByBuilding || {},
+      beam: calculationSettings?.beamWidth,
+      runtime: calculationSettings?.maxRuntimeMs,
+      combos: calculationSettings?.maxCombinationsPerBuilding,
+      buildings: calculationSettings?.allowedBuildings || []
+    },
+    result: {
+      coins: result.totals?.coins || 0,
+      products: result.totals?.products || 0,
+      status: debug.solverStatus,
+      objective: debug.objectiveValue,
+      feasible: debug.validation?.feasible
+    },
+    search: {
+      visited: raw.visitedNodes,
+      beamExact: raw.beamExact,
+      beamDropped: raw.beamDroppedStates,
+      seed: raw.bestSeedValue,
+      ubPruned: raw.prunedByUpperBound,
+      materialPruned: raw.prunedBeforeRecursionByMaterialFlow,
+      levels: (globalSearch.beamLevels || []).map((level) => ({
+        b: level.building,
+        in: level.statesBefore,
+        exp: level.candidateExpansions,
+        feas: level.feasibleExpansions,
+        trim: level.droppedStates,
+        best: level.bestValueAfter
+      }))
+    },
+    probe: probeSearch
+      ? {
+          objective: probeSearch.objectiveValue,
+          status: probeSearch.solverStatus,
+          dropped: probeSearch.beamDroppedStates,
+          top: probeSearch.topStatesCount,
+          avgTop: Math.round(probeSearch.averageTopProbeValue || 0)
+        }
+      : null,
+    repair: localRepair
+      ? {
+          attempts: localRepair.attempts,
+          accepted: localRepair.accepted,
+          exp: localRepair.candidateExpansions,
+          feasible: localRepair.feasibleCandidates,
+          bestDelta: localRepair.bestRepairDelta,
+          groups: localRepair.groups
+        }
+      : null,
+    usage: debug.buildingUsage || [],
+    flow: (debug.materialFlow || []).map((item) => ({
+      p: item.product,
+      m: item.made,
+      s: item.sold,
+      i: item.usedAsIntermediate
+    })),
+    buildings
+  };
+}
+
 function buildCompactDebugJson({ result, calculationSettings, ingredientLookup }) {
   const buildingComparisons = sanitizeBuildingComparisons(result.optimizationDebug?.buildingComparisons || []);
   const betterFeasibleAlternatives = buildingComparisons
@@ -443,7 +530,7 @@ export default function ProductionCalculator({ normalized }) {
   const [profileName, setProfileName] = useState("");
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [debugCopyStatus, setDebugCopyStatus] = useState("");
-  const [debugJsonExportMode, setDebugJsonExportMode] = useState("compact");
+  const [debugJsonExportMode, setDebugJsonExportMode] = useState("ai");
   const [beamWidth, setBeamWidth] = useState(config.defaultState.beamWidth);
   const [maxRuntimeMs, setMaxRuntimeMs] = useState(config.defaultState.maxRuntimeMs);
   const [maxCombinationsPerBuilding, setMaxCombinationsPerBuilding] = useState(config.defaultState.maxCombinationsPerBuilding);
@@ -871,6 +958,10 @@ export default function ProductionCalculator({ normalized }) {
 
   function buildJsonExport() {
     const compactDebug = buildCompactDebugJson({ result, calculationSettings, ingredientLookup });
+
+    if (debugJsonExportMode === "ai") {
+      return buildAiDebugSummary({ result, calculationSettings });
+    }
 
     if (debugJsonExportMode === "summary") {
       return {
@@ -1318,6 +1409,7 @@ export default function ProductionCalculator({ normalized }) {
                   <label className="debugExportMode">
                     <span>JSON Exportmodus</span>
                     <select value={debugJsonExportMode} onChange={(event) => setDebugJsonExportMode(event.target.value)}>
+                      <option value="ai">AI Kurzdebug</option>
                       <option value="compact">Kompakt</option>
                       <option value="summary">Nur Summary</option>
                     </select>
