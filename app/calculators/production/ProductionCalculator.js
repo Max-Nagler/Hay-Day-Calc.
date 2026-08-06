@@ -152,6 +152,7 @@ function buildAiDebugSummary({ result, calculationSettings }) {
   const raw = debug.raw || {};
   const globalSearch = combinationDebug.globalSearch || {};
   const localRepair = raw.localRepair || combinationDebug.localRepair || null;
+  const archiveRepair = raw.archiveRepair || combinationDebug.archiveRepair || null;
   const probeSearch = raw.probeSearch || combinationDebug.probeSearch || null;
   const buildings = (combinationDebug.buildings || []).map((building) => ({
     b: building.building,
@@ -222,6 +223,16 @@ function buildAiDebugSummary({ result, calculationSettings }) {
           feasible: localRepair.feasibleCandidates,
           bestDelta: localRepair.bestRepairDelta,
           groups: localRepair.groups
+        }
+      : null,
+    archiveRepair: archiveRepair
+      ? {
+          enabled: archiveRepair.enabled,
+          candidates: archiveRepair.candidates,
+          attempted: archiveRepair.attempted,
+          accepted: archiveRepair.accepted,
+          bestDelta: archiveRepair.bestDelta,
+          results: archiveRepair.results
         }
       : null,
     usage: debug.buildingUsage || [],
