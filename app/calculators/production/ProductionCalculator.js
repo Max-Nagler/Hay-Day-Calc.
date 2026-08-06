@@ -205,6 +205,12 @@ function buildAiDebugSummary({ result, calculationSettings }) {
           status: probeSearch.solverStatus,
           dropped: probeSearch.beamDroppedStates,
           top: probeSearch.topStatesCount,
+          archive: probeSearch.topStateArchive?.archiveSize || 0,
+          returned: probeSearch.topStateArchive?.returnedTopStates || probeSearch.topStatesCount,
+          unique: probeSearch.topStateArchive?.diversitySignatures || probeSearch.topStatesCount,
+          seen: probeSearch.topStateArchive?.candidatesSeen || 0,
+          best: Math.round(probeSearch.bestProbeValue || 0),
+          worst: Math.round(probeSearch.worstTopProbeValue || 0),
           avgTop: Math.round(probeSearch.averageTopProbeValue || 0)
         }
       : null,
